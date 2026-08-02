@@ -1,0 +1,2361 @@
+-- ==========================================
+-- UNIVERSAL SECRET MULNES HUB (V35 - VIP LOADING SCREEN EDITION + BULLET SPREAD REACTOR)
+-- ==========================================
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
+
+local player = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
+local guiParent = pcall(function() return CoreGui end) and CoreGui or player:WaitForChild("PlayerGui")
+
+-- ==========================================
+-- VIP LOADING SCREEN GUI (NON-FULLSCREEN)
+-- ==========================================
+
+local LoadingScreenGui = Instance.new("ScreenGui")
+LoadingScreenGui.Name = "MulnesLoadingGui"
+LoadingScreenGui.ResetOnSpawn = false
+LoadingScreenGui.Parent = guiParent
+
+local LoadFrame = Instance.new("Frame")
+LoadFrame.Size = UDim2.new(0, 320, 0, 380)
+LoadFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
+LoadFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+LoadFrame.Active = true
+LoadFrame.Draggable = true
+LoadFrame.Parent = LoadingScreenGui
+
+local LoadCorner = Instance.new("UICorner")
+LoadCorner.CornerRadius = UDim.new(0, 8)
+LoadCorner.Parent = LoadFrame
+
+local LoadStroke = Instance.new("UIStroke")
+LoadStroke.Color = Color3.fromRGB(180, 100, 255)
+LoadStroke.Thickness = 1.5
+LoadStroke.Parent = LoadFrame
+
+local LoadTitle = Instance.new("TextLabel")
+LoadTitle.Size = UDim2.new(1, 0, 0, 35)
+LoadTitle.Position = UDim2.new(0, 0, 0, 10)
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.Text = "Mulnes Hub - VIP Authentication"
+LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadTitle.TextSize = 14
+LoadTitle.Font = Enum.Font.SourceSansBold
+LoadTitle.Parent = LoadFrame
+
+local LoadIcon = Instance.new("ImageLabel")
+LoadIcon.Size = UDim2.new(0, 100, 0, 100)
+LoadIcon.Position = UDim2.new(0.5, -50, 0, 50)
+LoadIcon.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+LoadIcon.Image = "rbxassetid://0"
+LoadIcon.Parent = LoadFrame
+
+local IconCorner = Instance.new("UICorner")
+IconCorner.CornerRadius = UDim.new(0, 8)
+IconCorner.Parent = LoadIcon
+
+local PasswordBox = Instance.new("TextBox")
+PasswordBox.Size = UDim2.new(0.85, 0, 0, 38)
+PasswordBox.Position = UDim2.new(0.075, 0, 0, 165)
+PasswordBox.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+PasswordBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+PasswordBox.PlaceholderText = "Enter VIP Password..."
+PasswordBox.Text = ""
+PasswordBox.Font = Enum.Font.SourceSansBold
+PasswordBox.TextSize = 13
+PasswordBox.ClearTextOnFocus = false
+PasswordBox.Parent = LoadFrame
+
+local PassCorner = Instance.new("UICorner")
+PassCorner.CornerRadius = UDim.new(0, 6)
+PassCorner.Parent = PasswordBox
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.85, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.075, 0, 0, 212)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Status: Enter password to load hub"
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLabel.Font = Enum.Font.SourceSansBold
+StatusLabel.TextSize = 12
+StatusLabel.Parent = LoadFrame
+
+local LoginButton = Instance.new("TextButton")
+LoginButton.Size = UDim2.new(0.85, 0, 0, 42)
+LoginButton.Position = UDim2.new(0.075, 0, 0, 250)
+LoginButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+LoginButton.Text = "Load Mulnes Hub"
+LoginButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoginButton.Font = Enum.Font.SourceSansBold
+LoginButton.TextSize = 14
+LoginButton.Parent = LoadFrame
+
+local LoginCorner = Instance.new("UICorner")
+LoginCorner.CornerRadius = UDim.new(0, 6)
+LoginCorner.Parent = LoginButton
+
+local correctPassword = "Muluneste/Budhismas"
+
+-- Function to initialize and load the main hub script safely
+local function startMainHub()
+    LoadingScreenGui:Destroy()
+
+    local function setupAntiIdle()
+        pcall(function()
+            player.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end)
+    end
+    setupAntiIdle()
+
+    if hookmetamethod then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if (method == "Kick" or method == "kick") and self == player then
+                warn("[Mulnes Hub Anti-Ban]: Blocked server kick attempt due to over-abuse/flagging.")
+                return nil
+            end
+            
+            if method == "InvokeServer" or method == "FireServer" then
+                local remoteName = tostring(self)
+                if remoteName:lower():find("ban") or remoteName:lower():find("kick") or remoteName:lower():find("report") or remoteName:lower():find("detect") then
+                    return nil
+                end
+            end
+            
+            return oldNamecall(self, ...)
+        end))
+    end
+
+    pcall(function()
+        for _, v in pairs(getgc(true)) do
+            if typeof(v) == "table" then
+                local detectFunc = rawget(v, "Detected")
+                if typeof(detectFunc) == "function" then
+                    hookfunction(detectFunc, function(...)
+                        return true
+                    end)
+                end
+                
+                local killFunc = rawget(v, "Kill")
+                if typeof(killFunc) == "function" then
+                    hookfunction(killFunc, function(...)
+                        return wait(9e9)
+                    end)
+                end
+            end
+        end
+    end)
+
+    if guiParent:FindFirstChild("MulnesHub") then guiParent.MulnesHub:Destroy() end
+    if guiParent:FindFirstChild("MulnesESPMenu") then guiParent.MulnesESPMenu:Destroy() end
+    if guiParent:FindFirstChild("MulnesPlayerViewMenu") then guiParent.MulnesPlayerViewMenu:Destroy() end
+    if guiParent:FindFirstChild("MulnesSettingsMenu") then guiParent.MulnesSettingsMenu:Destroy() end
+    if guiParent:FindFirstChild("MulnesAIAgentMenu") then guiParent.MulnesAIAgentMenu:Destroy() end
+    if guiParent:FindFirstChild("MulnesDynamicCompass") then guiParent.MulnesDynamicCompass:Destroy() end
+    if guiParent:FindFirstChild("MulnesMovementMenu") then guiParent.MulnesMovementMenu:Destroy() end
+    if guiParent:FindFirstChild("MulnesReportMenu") then guiParent.MulnesReportMenu:Destroy() end
+    if guiParent:FindFirstChild("MulnesProtectionMenu") then guiParent.MulnesProtectionMenu:Destroy() end
+
+    local moveSettings = {
+        TPWalkEnabled = false,
+        TPWalkSpeed = 16,
+        CWalkEnabled = false,
+        CWalkSpeed = 16,
+        FlyEnabled = false,
+        CFrameFlyEnabled = false,
+        FlySpeed = 50,
+        VFlyEnabled = false,
+        NoLagGfx = false,
+        NoclipEnabled = false
+    }
+
+    local protectionSettings = {
+        AntiFling = false,
+        AntiSit = false,
+        AntiFreeze = false,
+        AntiCrash = false,
+        AntiLag = false,
+        Godmode = false,
+        CleanHazards = false,
+        AntiNpcDamage = false
+    }
+
+    local telekinesisActive = false
+    local telekinesisTarget = nil
+    local f3xTpToolEnabled = false
+
+    local hubTheme = {
+        PrimaryColor = Color3.fromRGB(25, 25, 25),
+        AccentColor = Color3.fromRGB(180, 100, 255),
+        AnimationSpeed = 0.3,
+        CurrentDesign = "Default"
+    }
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "MulnesHub"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = guiParent
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 300, 0, 520)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -260)
+    MainFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.Parent = ScreenGui
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.Parent = MainFrame
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = hubTheme.AccentColor
+    UIStroke.Thickness = 1.5
+    UIStroke.Parent = MainFrame
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -70, 0, 35)
+    Title.Position = UDim2.new(0, 10, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "Universal Secret Mulnes Hub V35"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.SourceSansBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = MainFrame
+
+    local function createTopBtn(text, color, posOffset)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 25, 0, 25)
+        btn.Position = UDim2.new(1, posOffset, 0, 5)
+        btn.BackgroundColor3 = color
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.SourceSansBold
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 4)
+        corner.Parent = btn
+        btn.Parent = MainFrame
+        return btn
+    end
+
+    local CloseButton = createTopBtn("X", Color3.fromRGB(200, 50, 50), -30)
+    local MinimizeButton = createTopBtn("-", Color3.fromRGB(100, 100, 100), -60)
+
+    local MainScrolling = Instance.new("ScrollingFrame")
+    MainScrolling.Size = UDim2.new(1, -10, 1, -45)
+    MainScrolling.Position = UDim2.new(0, 5, 0, 40)
+    MainScrolling.BackgroundTransparency = 1
+    MainScrolling.ScrollBarThickness = 4
+    MainScrolling.Parent = MainFrame
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 6)
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    UIListLayout.Parent = MainScrolling
+
+    local function createMenuButton(text, color, parent)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.95, 0, 0, 30)
+        btn.BackgroundColor3 = color
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.SourceSansBold
+        btn.TextSize = 13
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 4)
+        corner.Parent = btn
+        btn.Parent = parent
+        return btn
+    end
+
+    local function createSectionHeader(text, parent)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.95, 0, 0, 22)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = Color3.fromRGB(180, 100, 255)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 13
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = parent
+        return label
+    end
+
+    local function createToggleBtn(name, key, parent, targetTable)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.95, 0, 0, 30)
+        local state = targetTable[key]
+        btn.BackgroundColor3 = state and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(90, 90, 90)
+        btn.Text = name .. ": " .. (state and "ON" or "OFF")
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.SourceSansBold
+        btn.TextSize = 13
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 4)
+        corner.Parent = btn
+        btn.Parent = parent
+        
+        btn.MouseButton1Click:Connect(function()
+            targetTable[key] = not targetTable[key]
+            local newState = targetTable[key]
+            btn.BackgroundColor3 = newState and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(90, 90, 90)
+            btn.Text = name .. ": " .. (newState and "ON" or "OFF")
+        end)
+        return btn
+    end
+
+    -- ==========================================
+    -- PROTECTIONS & ANTI-LAG SUB-MENU UI
+    -- ==========================================
+    local protectionMenuOpen = false
+    local ProtectionMenuGui = Instance.new("ScreenGui")
+    ProtectionMenuGui.Name = "MulnesProtectionMenu"
+    ProtectionMenuGui.ResetOnSpawn = false
+    ProtectionMenuGui.Parent = guiParent
+
+    local ProtFrame = Instance.new("Frame")
+    ProtFrame.Size = UDim2.new(0, 280, 0, 410)
+    ProtFrame.Position = UDim2.new(0.5, 160, 0.5, -140)
+    ProtFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    ProtFrame.Active = true
+    ProtFrame.Draggable = true
+    ProtFrame.Visible = false
+    ProtFrame.Parent = ProtectionMenuGui
+
+    local ProtCorner = Instance.new("UICorner")
+    ProtCorner.CornerRadius = UDim.new(0, 8)
+    ProtCorner.Parent = ProtFrame
+    local ProtStroke = Instance.new("UIStroke")
+    ProtStroke.Color = hubTheme.AccentColor
+    ProtStroke.Thickness = 1.5
+    ProtStroke.Parent = ProtFrame
+
+    local ProtTitle = Instance.new("TextLabel")
+    ProtTitle.Size = UDim2.new(1, -35, 0, 35)
+    ProtTitle.Position = UDim2.new(0, 10, 0, 0)
+    ProtTitle.BackgroundTransparency = 1
+    ProtTitle.Text = "Protections & Godmode Menu"
+    ProtTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ProtTitle.TextSize = 14
+    ProtTitle.Font = Enum.Font.SourceSansBold
+    ProtTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ProtTitle.Parent = ProtFrame
+
+    local ProtClose = Instance.new("TextButton")
+    ProtClose.Size = UDim2.new(0, 25, 0, 25)
+    ProtClose.Position = UDim2.new(1, -30, 0, 5)
+    ProtClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    ProtClose.Text = "X"
+    ProtClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ProtClose.Font = Enum.Font.SourceSansBold
+    local ptclCorner = Instance.new("UICorner")
+    ptclCorner.CornerRadius = UDim.new(0, 4)
+    ptclCorner.Parent = ProtClose
+    ProtClose.Parent = ProtFrame
+
+    ProtClose.MouseButton1Click:Connect(function()
+        ProtFrame.Visible = false
+        protectionMenuOpen = false
+    end)
+
+    local ProtListLayout = Instance.new("UIListLayout")
+    ProtListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ProtListLayout.Padding = UDim.new(0, 6)
+    ProtListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local ProtScrolling = Instance.new("ScrollingFrame")
+    ProtScrolling.Size = UDim2.new(1, -10, 1, -45)
+    ProtScrolling.Position = UDim2.new(0, 5, 0, 40)
+    ProtScrolling.BackgroundTransparency = 1
+    ProtScrolling.ScrollBarThickness = 4
+    ProtScrolling.Parent = ProtFrame
+    ProtListLayout.Parent = ProtScrolling
+
+    createSectionHeader("--- SAFETY & GODMODE ---", ProtScrolling)
+    createToggleBtn("Godmode", "Godmode", ProtScrolling, protectionSettings)
+    createToggleBtn("Clean Hazards (Kill Bricks/Lava)", "CleanHazards", ProtScrolling, protectionSettings)
+    createToggleBtn("Anti-NPC Damage", "AntiNpcDamage", ProtScrolling, protectionSettings)
+    createToggleBtn("Anti-Fling", "AntiFling", ProtScrolling, protectionSettings)
+    createToggleBtn("Anti-Sit", "AntiSit", ProtScrolling, protectionSettings)
+    createToggleBtn("Anti-Freeze", "AntiFreeze", ProtScrolling, protectionSettings)
+    createToggleBtn("Anti-Crash", "AntiCrash", ProtScrolling, protectionSettings)
+    createToggleBtn("Anti-Lag", "AntiLag", ProtScrolling, protectionSettings)
+
+    ProtListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        ProtScrolling.CanvasSize = UDim2.new(0, 0, 0, ProtListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- ==========================================
+    -- SEPARATED ESP & AIMBOT ENGINE SUB-MENU
+    -- ==========================================
+    local espSettingsOpen = false
+
+    local espSettings = {
+        Enabled = false,
+        Chams = true,
+        Tracers = true,
+        Sightline = true,
+        LightBeam = true,
+        MaxRange = 500,
+        SightlineLength = 10,
+        SightlineDirection = "Front",
+        SightlineColorR = 255,
+        SightlineColorG = 255,
+        SightlineColorB = 0,
+        BeamWidth = 0.5
+    }
+
+    local aimbotSettings = {
+        Enabled = false,
+        WallCheck = true,
+        TeamCheck = true,
+        Smoothness = 1,
+        Keybind = Enum.UserInputType.MouseButton2,
+        BulletSpreadReactor = false
+    }
+
+    local activeHighlights = {}
+    local activeTracers = {}
+    local activeSightlines = {}
+    local activeLightBeams = {}
+
+    local ESPMenuGui = Instance.new("ScreenGui")
+    ESPMenuGui.Name = "MulnesESPMenu"
+    ESPMenuGui.ResetOnSpawn = false
+    ESPMenuGui.Parent = guiParent
+
+    local ESPFrame = Instance.new("Frame")
+    ESPFrame.Size = UDim2.new(0, 260, 0, 680)
+    ESPFrame.Position = UDim2.new(0.5, 160, 0.5, -305)
+    ESPFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    ESPFrame.Active = true
+    ESPFrame.Draggable = true
+    ESPFrame.Visible = false
+    ESPFrame.Parent = ESPMenuGui
+
+    local ESPCorner = Instance.new("UICorner")
+    ESPCorner.CornerRadius = UDim.new(0, 8)
+    ESPCorner.Parent = ESPFrame
+    local ESPStroke = Instance.new("UIStroke")
+    ESPStroke.Color = hubTheme.AccentColor
+    ESPStroke.Thickness = 1.5
+    ESPStroke.Parent = ESPFrame
+
+    local ESPTitle = Instance.new("TextLabel")
+    ESPTitle.Size = UDim2.new(1, -35, 0, 35)
+    ESPTitle.Position = UDim2.new(0, 10, 0, 0)
+    ESPTitle.BackgroundTransparency = 1
+    ESPTitle.Text = "ESP & Aimbot Sub-Menu"
+    ESPTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ESPTitle.TextSize = 14
+    ESPTitle.Font = Enum.Font.SourceSansBold
+    ESPTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ESPTitle.Parent = ESPFrame
+
+    local ESPClose = Instance.new("TextButton")
+    ESPClose.Size = UDim2.new(0, 25, 0, 25)
+    ESPClose.Position = UDim2.new(1, -30, 0, 5)
+    ESPClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    ESPClose.Text = "X"
+    ESPClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ESPClose.Font = Enum.Font.SourceSansBold
+    local clCorner = Instance.new("UICorner")
+    clCorner.CornerRadius = UDim.new(0, 4)
+    clCorner.Parent = ESPClose
+    ESPClose.Parent = ESPFrame
+
+    ESPClose.MouseButton1Click:Connect(function()
+        ESPFrame.Visible = false
+        espSettingsOpen = false
+    end)
+
+    local ESPListLayout = Instance.new("UIListLayout")
+    ESPListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ESPListLayout.Padding = UDim.new(0, 6)
+    ESPListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local ESPScrolling = Instance.new("ScrollingFrame")
+    ESPScrolling.Size = UDim2.new(1, -10, 1, -45)
+    ESPScrolling.Position = UDim2.new(0, 5, 0, 40)
+    ESPScrolling.BackgroundTransparency = 1
+    ESPScrolling.ScrollBarThickness = 4
+    ESPScrolling.Parent = ESPFrame
+    ESPListLayout.Parent = ESPScrolling
+
+    createSectionHeader("--- ESP CONFIGURATION ---", ESPScrolling)
+    createToggleBtn("ESP Master", "Enabled", ESPScrolling, espSettings)
+    createToggleBtn("Chams (Highlight)", "Chams", ESPScrolling, espSettings)
+    createToggleBtn("Tracers (Lines)", "Tracers", ESPScrolling, espSettings)
+    createToggleBtn("Enemy View Cone (Head)", "Sightline", ESPScrolling, espSettings)
+    createToggleBtn("3D World Light Beam", "LightBeam", ESPScrolling, espSettings)
+
+    local espRangeFrame = Instance.new("Frame")
+    espRangeFrame.Size = UDim2.new(0.95, 0, 0, 30)
+    espRangeFrame.BackgroundTransparency = 1
+    espRangeFrame.Parent = ESPScrolling
+
+    local espRangeLabel = Instance.new("TextLabel")
+    espRangeLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    espRangeLabel.BackgroundTransparency = 1
+    espRangeLabel.Text = "Max ESP Range (Studs):"
+    espRangeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    espRangeLabel.Font = Enum.Font.SourceSansBold
+    espRangeLabel.TextSize = 12
+    espRangeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    espRangeLabel.Parent = espRangeFrame
+
+    local espRangeInput = Instance.new("TextBox")
+    espRangeInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    espRangeInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    espRangeInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    espRangeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    espRangeInput.Text = tostring(espSettings.MaxRange)
+    espRangeInput.Font = Enum.Font.SourceSansBold
+    espRangeInput.TextSize = 12
+    espRangeInput.ClearTextOnFocus = false
+    local erCorner = Instance.new("UICorner")
+    erCorner.CornerRadius = UDim.new(0, 4)
+    erCorner.Parent = espRangeInput
+    espRangeInput.Parent = espRangeFrame
+
+    espRangeInput.FocusLost:Connect(function()
+        local val = tonumber(espRangeInput.Text)
+        if val and val > 0 then espSettings.MaxRange = val else espRangeInput.Text = tostring(espSettings.MaxRange) end
+    end)
+
+    local slLenFrame = Instance.new("Frame")
+    slLenFrame.Size = UDim2.new(0.95, 0, 0, 30)
+    slLenFrame.BackgroundTransparency = 1
+    slLenFrame.Parent = ESPScrolling
+
+    local slLenLabel = Instance.new("TextLabel")
+    slLenLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    slLenLabel.BackgroundTransparency = 1
+    slLenLabel.Text = "Cone / Beam Length:"
+    slLenLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    slLenLabel.Font = Enum.Font.SourceSansBold
+    slLenLabel.TextSize = 12
+    slLenLabel.TextXAlignment = Enum.TextXAlignment.Left
+    slLenLabel.Parent = slLenFrame
+
+    local slLenInput = Instance.new("TextBox")
+    slLenInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    slLenInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    slLenInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    slLenInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    slLenInput.Text = tostring(espSettings.SightlineLength)
+    slLenInput.Font = Enum.Font.SourceSansBold
+    slLenInput.TextSize = 12
+    slLenInput.ClearTextOnFocus = false
+    local sllCorner = Instance.new("UICorner")
+    sllCorner.CornerRadius = UDim.new(0, 4)
+    sllCorner.Parent = slLenInput
+    slLenInput.Parent = slLenFrame
+
+    slLenInput.FocusLost:Connect(function()
+        local val = tonumber(slLenInput.Text)
+        if val and val > 0 then espSettings.SightlineLength = val else slLenInput.Text = tostring(espSettings.SightlineLength) end
+    end)
+
+    local beamWidthFrame = Instance.new("Frame")
+    beamWidthFrame.Size = UDim2.new(0.95, 0, 0, 30)
+    beamWidthFrame.BackgroundTransparency = 1
+    beamWidthFrame.Parent = ESPScrolling
+
+    local beamWidthLabel = Instance.new("TextLabel")
+    beamWidthLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    beamWidthLabel.BackgroundTransparency = 1
+    beamWidthLabel.Text = "Light Beam Width:"
+    beamWidthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    beamWidthLabel.Font = Enum.Font.SourceSansBold
+    beamWidthLabel.TextSize = 12
+    beamWidthLabel.TextXAlignment = Enum.TextXAlignment.Left
+    beamWidthLabel.Parent = beamWidthFrame
+
+    local beamWidthInput = Instance.new("TextBox")
+    beamWidthInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    beamWidthInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    beamWidthInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    beamWidthInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    beamWidthInput.Text = tostring(espSettings.BeamWidth)
+    beamWidthInput.Font = Enum.Font.SourceSansBold
+    beamWidthInput.TextSize = 12
+    beamWidthInput.ClearTextOnFocus = false
+    local bwCorner = Instance.new("UICorner")
+    bwCorner.CornerRadius = UDim.new(0, 4)
+    bwCorner.Parent = beamWidthInput
+    beamWidthInput.Parent = beamWidthFrame
+
+    beamWidthInput.FocusLost:Connect(function()
+        local val = tonumber(beamWidthInput.Text)
+        if val and val > 0 then espSettings.BeamWidth = val else beamWidthInput.Text = tostring(espSettings.BeamWidth) end
+    end)
+
+    local slDirFrame = Instance.new("Frame")
+    slDirFrame.Size = UDim2.new(0.95, 0, 0, 32)
+    slDirFrame.BackgroundTransparency = 1
+    slDirFrame.Parent = ESPScrolling
+
+    local slDirLabel = Instance.new("TextLabel")
+    slDirLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    slDirLabel.BackgroundTransparency = 1
+    slDirLabel.Text = "Cone Direction:"
+    slDirLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    slDirLabel.Font = Enum.Font.SourceSansBold
+    slDirLabel.TextSize = 12
+    slDirLabel.TextXAlignment = Enum.TextXAlignment.Left
+    slDirLabel.Parent = slDirFrame
+
+    local slDirBtn = Instance.new("TextButton")
+    slDirBtn.Size = UDim2.new(0.45, 0, 0.8, 0)
+    slDirBtn.Position = UDim2.new(0.55, 0, 0.1, 0)
+    slDirBtn.BackgroundColor3 = Color3.fromRGB(55, 45, 65)
+    slDirBtn.TextColor3 = Color3.fromRGB(180, 100, 255)
+    slDirBtn.Text = espSettings.SightlineDirection
+    slDirBtn.Font = Enum.Font.SourceSansBold
+    slDirBtn.TextSize = 12
+    local sldCorner = Instance.new("UICorner")
+    sldCorner.CornerRadius = UDim.new(0, 4)
+    sldCorner.Parent = slDirBtn
+    slDirBtn.Parent = slDirFrame
+
+    local directions = {"Front", "Skyward", "Back", "Bottom"}
+    local dirIndex = 1
+    slDirBtn.MouseButton1Click:Connect(function()
+        dirIndex = dirIndex % #directions + 1
+        espSettings.SightlineDirection = directions[dirIndex]
+        slDirBtn.Text = espSettings.SightlineDirection
+    end)
+
+    local slColorFrame = Instance.new("Frame")
+    slColorFrame.Size = UDim2.new(0.95, 0, 0, 30)
+    slColorFrame.BackgroundTransparency = 1
+    slColorFrame.Parent = ESPScrolling
+
+    local slColorLabel = Instance.new("TextLabel")
+    slColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    slColorLabel.BackgroundTransparency = 1
+    slColorLabel.Text = "Line RGB (0-255):"
+    slColorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    slColorLabel.Font = Enum.Font.SourceSansBold
+    slColorLabel.TextSize = 11
+    slColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+    slColorLabel.Parent = slColorFrame
+
+    local function createColorInput(posX, width, defaultVal)
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(width, 0, 0.8, 0)
+        box.Position = UDim2.new(posX, 0, 0.1, 0)
+        box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        box.TextColor3 = Color3.fromRGB(255, 255, 255)
+        box.Text = tostring(defaultVal)
+        box.Font = Enum.Font.SourceSansBold
+        box.TextSize = 11
+        box.ClearTextOnFocus = false
+        local cCorner = Instance.new("UICorner")
+        cCorner.CornerRadius = UDim.new(0, 4)
+        cCorner.Parent = box
+        box.Parent = slColorFrame
+        return box
+    end
+
+    local rInput = createColorInput(0.41, 0.18, espSettings.SightlineColorR)
+    local gInput = createColorInput(0.61, 0.18, espSettings.SightlineColorG)
+    local bInput = createColorInput(0.81, 0.18, espSettings.SightlineColorB)
+
+    local function updateSightlineColor()
+        local r = tonumber(rInput.Text)
+        local g = tonumber(gInput.Text)
+        local b = tonumber(bInput.Text)
+        if r and g and b then
+            espSettings.SightlineColorR = math.clamp(r, 0, 255)
+            espSettings.SightlineColorG = math.clamp(g, 0, 255)
+            espSettings.SightlineColorB = math.clamp(b, 0, 255)
+        else
+            rInput.Text = tostring(espSettings.SightlineColorR)
+            gInput.Text = tostring(espSettings.SightlineColorG)
+            bInput.Text = tostring(espSettings.SightlineColorB)
+        end
+    end
+
+    rInput.FocusLost:Connect(updateSightlineColor)
+    gInput.FocusLost:Connect(updateSightlineColor)
+    bInput.FocusLost:Connect(updateSightlineColor)
+
+    createSectionHeader("--- AIMBOT CONFIGURATION ---", ESPScrolling)
+    createToggleBtn("Aimbot Master", "Enabled", ESPScrolling, aimbotSettings)
+    createToggleBtn("Wall Check (Glass/Barrier Safe)", "WallCheck", ESPScrolling, aimbotSettings)
+    createToggleBtn("Team Check", "TeamCheck", ESPScrolling, aimbotSettings)
+    createToggleBtn("Bullet Spread Reactor", "BulletSpreadReactor", ESPScrolling, aimbotSettings)
+
+    local SmoothFrame = Instance.new("Frame")
+    SmoothFrame.Size = UDim2.new(0.95, 0, 0, 35)
+    SmoothFrame.BackgroundTransparency = 1
+    SmoothFrame.Parent = ESPScrolling
+
+    local SmoothLabel = Instance.new("TextLabel")
+    SmoothLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    SmoothLabel.BackgroundTransparency = 1
+    SmoothLabel.Text = "Aimbot Smoothness:"
+    SmoothLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SmoothLabel.Font = Enum.Font.SourceSansBold
+    SmoothLabel.TextSize = 13
+    SmoothLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SmoothLabel.Parent = SmoothFrame
+
+    local SmoothInput = Instance.new("TextBox")
+    SmoothInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    SmoothInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    SmoothInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    SmoothInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SmoothInput.Text = tostring(aimbotSettings.Smoothness)
+    SmoothInput.Font = Enum.Font.SourceSansBold
+    SmoothInput.TextSize = 13
+    SmoothInput.ClearTextOnFocus = false
+    local smCorner = Instance.new("UICorner")
+    smCorner.CornerRadius = UDim.new(0, 4)
+    smCorner.Parent = SmoothInput
+    SmoothInput.Parent = SmoothFrame
+
+    SmoothInput.FocusLost:Connect(function()
+        local val = tonumber(SmoothInput.Text)
+        if val and val > 0 then aimbotSettings.Smoothness = val else SmoothInput.Text = tostring(aimbotSettings.Smoothness) end
+    end)
+
+    local KeybindFrame = Instance.new("Frame")
+    KeybindFrame.Size = UDim2.new(0.95, 0, 0, 35)
+    KeybindFrame.BackgroundTransparency = 1
+    KeybindFrame.Parent = ESPScrolling
+
+    local KeybindLabel = Instance.new("TextLabel")
+    KeybindLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    KeybindLabel.BackgroundTransparency = 1
+    KeybindLabel.Text = "Aimbot Keybind:"
+    KeybindLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    KeybindLabel.Font = Enum.Font.SourceSansBold
+    KeybindLabel.TextSize = 13
+    KeybindLabel.TextXAlignment = Enum.TextXAlignment.Left
+    KeybindLabel.Parent = KeybindFrame
+
+    local KeybindButton = Instance.new("TextButton")
+    KeybindButton.Size = UDim2.new(0.45, 0, 0.8, 0)
+    KeybindButton.Position = UDim2.new(0.55, 0, 0.1, 0)
+    KeybindButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    KeybindButton.TextColor3 = Color3.fromRGB(180, 100, 255)
+    KeybindButton.Text = "MouseButton2"
+    KeybindButton.Font = Enum.Font.SourceSansBold
+    KeybindButton.TextSize = 12
+    local kbCorner = Instance.new("UICorner")
+    kbCorner.CornerRadius = UDim.new(0, 4)
+    kbCorner.Parent = KeybindButton
+    KeybindButton.Parent = KeybindFrame
+
+    local capturingKey = false
+    KeybindButton.MouseButton1Click:Connect(function()
+        capturingKey = true
+        KeybindButton.Text = "[ Press Any Key/Click ]"
+        KeybindButton.TextColor3 = Color3.fromRGB(255, 255, 0)
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if capturingKey then
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                aimbotSettings.Keybind = input.KeyCode
+                KeybindButton.Text = tostring(input.KeyCode.Name)
+                KeybindButton.TextColor3 = Color3.fromRGB(180, 100, 255)
+                capturingKey = false
+            elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.MouseButton3 then
+                aimbotSettings.Keybind = input.UserInputType
+                KeybindButton.Text = tostring(input.UserInputType.Name)
+                KeybindButton.TextColor3 = Color3.fromRGB(180, 100, 255)
+                capturingKey = false
+            end
+        end
+    end)
+
+    ESPListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        ESPScrolling.CanvasSize = UDim2.new(0, 0, 0, ESPListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- ==========================================
+    -- ADVANCED MOVEMENT & ADMIN TOOLS MENU UI
+    -- ==========================================
+    local movementMenuOpen = false
+    local MovementMenuGui = Instance.new("ScreenGui")
+    MovementMenuGui.Name = "MulnesMovementMenu"
+    MovementMenuGui.ResetOnSpawn = false
+    MovementMenuGui.Parent = guiParent
+
+    local MovFrame = Instance.new("Frame")
+    MovFrame.Size = UDim2.new(0, 280, 0, 520)
+    MovFrame.Position = UDim2.new(0.5, 160, 0.5, 60)
+    MovFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    MovFrame.Active = true
+    MovFrame.Draggable = true
+    MovFrame.Visible = false
+    MovFrame.Parent = MovementMenuGui
+
+    local MovCorner = Instance.new("UICorner")
+    MovCorner.CornerRadius = UDim.new(0, 8)
+    MovCorner.Parent = MovFrame
+    local MovStroke = Instance.new("UIStroke")
+    MovStroke.Color = hubTheme.AccentColor
+    MovStroke.Thickness = 1.5
+    MovStroke.Parent = MovFrame
+
+    local MovTitle = Instance.new("TextLabel")
+    MovTitle.Size = UDim2.new(1, -35, 0, 35)
+    MovTitle.Position = UDim2.new(0, 10, 0, 0)
+    MovTitle.BackgroundTransparency = 1
+    MovTitle.Text = "Movement & Admin Sub-Menu"
+    MovTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MovTitle.TextSize = 14
+    MovTitle.Font = Enum.Font.SourceSansBold
+    MovTitle.TextXAlignment = Enum.TextXAlignment.Left
+    MovTitle.Parent = MovFrame
+
+    local MovClose = Instance.new("TextButton")
+    MovClose.Size = UDim2.new(0, 25, 0, 25)
+    MovClose.Position = UDim2.new(1, -30, 0, 5)
+    MovClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    MovClose.Text = "X"
+    MovClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MovClose.Font = Enum.Font.SourceSansBold
+    local mvclCorner = Instance.new("UICorner")
+    mvclCorner.CornerRadius = UDim.new(0, 4)
+    mvclCorner.Parent = MovClose
+    MovClose.Parent = MovFrame
+
+    MovClose.MouseButton1Click:Connect(function()
+        MovFrame.Visible = false
+        movementMenuOpen = false
+    end)
+
+    local MovListLayout = Instance.new("UIListLayout")
+    MovListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    MovListLayout.Padding = UDim.new(0, 6)
+    MovListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local MovScrolling = Instance.new("ScrollingFrame")
+    MovScrolling.Size = UDim2.new(1, -10, 1, -45)
+    MovScrolling.Position = UDim2.new(0, 5, 0, 40)
+    MovScrolling.BackgroundTransparency = 1
+    MovScrolling.ScrollBarThickness = 4
+    MovScrolling.Parent = MovFrame
+    MovListLayout.Parent = MovScrolling
+
+    createToggleBtn("TPWalk (No Lag)", "TPWalkEnabled", MovScrolling, moveSettings)
+    createToggleBtn("CFrame Walk (CWalk)", "CWalkEnabled", MovScrolling, moveSettings)
+
+    local tpWalkSpeedFrame = Instance.new("Frame")
+    tpWalkSpeedFrame.Size = UDim2.new(0.95, 0, 0, 35)
+    tpWalkSpeedFrame.BackgroundTransparency = 1
+    tpWalkSpeedFrame.Parent = MovScrolling
+
+    local tpWalkSpeedLabel = Instance.new("TextLabel")
+    tpWalkSpeedLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    tpWalkSpeedLabel.BackgroundTransparency = 1
+    tpWalkSpeedLabel.Text = "Walk/TP Speed:"
+    tpWalkSpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tpWalkSpeedLabel.Font = Enum.Font.SourceSansBold
+    tpWalkSpeedLabel.TextSize = 13
+    tpWalkSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    tpWalkSpeedLabel.Parent = tpWalkSpeedFrame
+
+    local tpWalkSpeedInput = Instance.new("TextBox")
+    tpWalkSpeedInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    tpWalkSpeedInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    tpWalkSpeedInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    tpWalkSpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tpWalkSpeedInput.Text = tostring(moveSettings.TPWalkSpeed)
+    tpWalkSpeedInput.Font = Enum.Font.SourceSansBold
+    tpWalkSpeedInput.TextSize = 13
+    tpWalkSpeedInput.ClearTextOnFocus = false
+    local tpwsCorner = Instance.new("UICorner")
+    tpwsCorner.CornerRadius = UDim.new(0, 4)
+    tpwsCorner.Parent = tpWalkSpeedInput
+    tpWalkSpeedInput.Parent = tpWalkSpeedFrame
+
+    tpWalkSpeedInput.FocusLost:Connect(function()
+        local val = tonumber(tpWalkSpeedInput.Text)
+        if val and val >= 0 then 
+            moveSettings.TPWalkSpeed = val 
+            moveSettings.CWalkSpeed = val
+        else 
+            tpWalkSpeedInput.Text = tostring(moveSettings.TPWalkSpeed) 
+        end
+    end)
+
+    createToggleBtn("Vehicle / Object Fly", "FlyEnabled", MovScrolling, moveSettings)
+    createToggleBtn("CFrame Fly (CFly)", "CFrameFlyEnabled", MovScrolling, moveSettings)
+    createToggleBtn("Character / Pure VFly", "VFlyEnabled", MovScrolling, moveSettings)
+
+    local flySpeedFrame = Instance.new("Frame")
+    flySpeedFrame.Size = UDim2.new(0.95, 0, 0, 35)
+    flySpeedFrame.BackgroundTransparency = 1
+    flySpeedFrame.Parent = MovScrolling
+
+    local flySpeedLabel = Instance.new("TextLabel")
+    flySpeedLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    flySpeedLabel.BackgroundTransparency = 1
+    flySpeedLabel.Text = "Fly Speed:"
+    flySpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    flySpeedLabel.Font = Enum.Font.SourceSansBold
+    flySpeedLabel.TextSize = 13
+    flySpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    flySpeedLabel.Parent = flySpeedFrame
+
+    local flySpeedInput = Instance.new("TextBox")
+    flySpeedInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    flySpeedInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    flySpeedInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    flySpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    flySpeedInput.Text = tostring(moveSettings.FlySpeed)
+    flySpeedInput.Font = Enum.Font.SourceSansBold
+    flySpeedInput.TextSize = 13
+    flySpeedInput.ClearTextOnFocus = false
+    local fsCorner = Instance.new("UICorner")
+    fsCorner.CornerRadius = UDim.new(0, 4)
+    fsCorner.Parent = flySpeedInput
+    flySpeedInput.Parent = flySpeedFrame
+
+    flySpeedInput.FocusLost:Connect(function()
+        local val = tonumber(flySpeedInput.Text)
+        if val and val >= 0 then moveSettings.FlySpeed = val else flySpeedInput.Text = tostring(moveSettings.FlySpeed) end
+    end)
+
+    createToggleBtn("Noclip (Walk Through Walls)", "NoclipEnabled", MovScrolling, moveSettings)
+    createToggleBtn("Ultra GFX No Lag", "NoLagGfx", MovScrolling, moveSettings)
+
+    local btnTelekinesis = createMenuButton("Toggle Telekinesis (Click & Drag)", Color3.fromRGB(90, 90, 90), MovScrolling)
+    local btnTPTool = createMenuButton("Give Admin TP Tool (Click to TP)", Color3.fromRGB(45, 45, 55), MovScrolling)
+    local btnF3XTP = createMenuButton("Toggle F3X TPWalk Sync", Color3.fromRGB(45, 45, 55), MovScrolling)
+
+    btnTelekinesis.MouseButton1Click:Connect(function()
+        telekinesisActive = not telekinesisActive
+        btnTelekinesis.BackgroundColor3 = telekinesisActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(90, 90, 90)
+        btnTelekinesis.Text = "Telekinesis (Click & Drag): " .. (telekinesisActive and "ON" or "OFF")
+    end)
+
+    btnTPTool.MouseButton1Click:Connect(function()
+        local backpack = player:FindFirstChildOfClass("Backpack")
+        if backpack then
+            local tool = Instance.new("Tool")
+            tool.Name = "Mulnes TP Tool"
+            tool.RequiresHandle = false
+            tool.Activated:Connect(function()
+                local mouse = player:GetMouse()
+                if mouse and mouse.Hit and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+                end
+            end)
+            tool.Parent = backpack
+            StarterGui:SetCore("SendNotification", {Title = "Mulnes Hub", Text = "Admin TP Tool added to backpack!", Duration = 3})
+        end
+    end)
+
+    btnF3XTP.MouseButton1Click:Connect(function()
+        f3xTpToolEnabled = not f3xTpToolEnabled
+        btnF3XTP.BackgroundColor3 = f3xTpToolEnabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(45, 45, 55)
+        btnF3XTP.Text = "F3X TPWalk Sync: " .. (f3xTpToolEnabled and "ON" or "OFF")
+    end)
+
+    MovListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        MovScrolling.CanvasSize = UDim2.new(0, 0, 0, MovListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- ==========================================
+    -- PLAYER VIEW & MOCK CHAT MENU UI SETUP
+    -- ==========================================
+    local playerViewMenuOpen = false
+    local selectedSpectatePlayer = nil
+
+    local PlayerViewMenuGui = Instance.new("ScreenGui")
+    PlayerViewMenuGui.Name = "MulnesPlayerViewMenu"
+    PlayerViewMenuGui.ResetOnSpawn = false
+    PlayerViewMenuGui.Parent = guiParent
+
+    local PVFrame = Instance.new("Frame")
+    PVFrame.Size = UDim2.new(0, 320, 0, 410)
+    PVFrame.Position = UDim2.new(0.5, 160, 0.5, 70)
+    PVFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    PVFrame.Active = true
+    PVFrame.Draggable = true
+    PVFrame.Visible = false
+    PVFrame.Parent = PlayerViewMenuGui
+
+    local PVCorner = Instance.new("UICorner")
+    PVCorner.CornerRadius = UDim.new(0, 8)
+    PVCorner.Parent = PVFrame
+    local PVStroke = Instance.new("UIStroke")
+    PVStroke.Color = hubTheme.AccentColor
+    PVStroke.Thickness = 1.5
+    PVStroke.Parent = PVFrame
+
+    local PVTitle = Instance.new("TextLabel")
+    PVTitle.Size = UDim2.new(1, -35, 0, 35)
+    PVTitle.Position = UDim2.new(0, 10, 0, 0)
+    PVTitle.BackgroundTransparency = 1
+    PVTitle.Text = "Player View & Mock Chat Menu"
+    PVTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PVTitle.TextSize = 14
+    PVTitle.Font = Enum.Font.SourceSansBold
+    PVTitle.TextXAlignment = Enum.TextXAlignment.Left
+    PVTitle.Parent = PVFrame
+
+    local PVClose = Instance.new("TextButton")
+    PVClose.Size = UDim2.new(0, 25, 0, 25)
+    PVClose.Position = UDim2.new(1, -30, 0, 5)
+    PVClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    PVClose.Text = "X"
+    PVClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PVClose.Font = Enum.Font.SourceSansBold
+    local pvclCorner = Instance.new("UICorner")
+    pvclCorner.CornerRadius = UDim.new(0, 4)
+    pvclCorner.Parent = PVClose
+    PVClose.Parent = PVFrame
+
+    PVClose.MouseButton1Click:Connect(function()
+        PVFrame.Visible = false
+        playerViewMenuOpen = false
+    end)
+
+    local PVListLayout = Instance.new("UIListLayout")
+    PVListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PVListLayout.Padding = UDim.new(0, 6)
+    PVListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local PVScrolling = Instance.new("ScrollingFrame")
+    PVScrolling.Size = UDim2.new(1, -10, 1, -115)
+    PVScrolling.Position = UDim2.new(0, 5, 0, 40)
+    PVScrolling.BackgroundTransparency = 1
+    PVScrolling.ScrollBarThickness = 4
+    PVScrolling.Parent = PVFrame
+    PVListLayout.Parent = PVScrolling
+
+    local InstructionsLabel = Instance.new("TextLabel")
+    InstructionsLabel.Size = UDim2.new(0.95, 0, 0, 30)
+    InstructionsLabel.Position = UDim2.new(0, 8, 1, -105)
+    InstructionsLabel.BackgroundTransparency = 1
+    InstructionsLabel.Text = "[Left Click] Name to Spectate\n[Right Click] Anywhere/Hub to Cancel POV"
+    InstructionsLabel.TextColor3 = Color3.fromRGB(180, 100, 255)
+    InstructionsLabel.Font = Enum.Font.SourceSansBold
+    InstructionsLabel.TextSize = 12
+    InstructionsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    InstructionsLabel.Parent = PVFrame
+
+    local SelectedPlayerLabel = Instance.new("TextLabel")
+    SelectedPlayerLabel.Size = UDim2.new(0.95, 0, 0, 20)
+    SelectedPlayerLabel.Position = UDim2.new(0, 8, 1, -70)
+    SelectedPlayerLabel.BackgroundTransparency = 1
+    SelectedPlayerLabel.Text = "Target: None Selected"
+    SelectedPlayerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    SelectedPlayerLabel.Font = Enum.Font.SourceSansItalic
+    SelectedPlayerLabel.TextSize = 12
+    SelectedPlayerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SelectedPlayerLabel.Parent = PVFrame
+
+    local MockChatInput = Instance.new("TextBox")
+    MockChatInput.Size = UDim2.new(0.95, 0, 0, 30)
+    MockChatInput.Position = UDim2.new(0, 8, 1, -45)
+    MockChatInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    MockChatInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MockChatInput.PlaceholderText = "Type mock chat message for target..."
+    MockChatInput.Text = ""
+    MockChatInput.Font = Enum.Font.SourceSansBold
+    MockChatInput.TextSize = 13
+    MockChatInput.ClearTextOnFocus = false
+    local mcCorner = Instance.new("UICorner")
+    mcCorner.CornerRadius = UDim.new(0, 4)
+    mcCorner.Parent = MockChatInput
+    MockChatInput.Parent = PVFrame
+
+    local function resetCameraToOriginalPOV()
+        selectedSpectatePlayer = nil
+        SelectedPlayerLabel.Text = "Target: None Selected (Original POV)"
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            camera.CameraSubject = player.Character.Humanoid
+        else
+            camera.CameraSubject = player.Character
+        end
+    end
+
+    local function refreshPlayerList()
+        for _, child in pairs(PVScrolling:GetChildren()) do
+            if child:IsA("TextButton") then child:Destroy() end
+        end
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                local pBtn = Instance.new("TextButton")
+                pBtn.Size = UDim2.new(0.95, 0, 0, 30)
+                pBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+                pBtn.Text = p.Name .. " (" .. p.DisplayName .. ")"
+                pBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                pBtn.Font = Enum.Font.SourceSansBold
+                pBtn.TextSize = 13
+                local pCorner = Instance.new("UICorner")
+                pCorner.CornerRadius = UDim.new(0, 4)
+                pCorner.Parent = pBtn
+                pBtn.Parent = PVScrolling
+                
+                pBtn.MouseButton1Click:Connect(function()
+                    selectedSpectatePlayer = p
+                    SelectedPlayerLabel.Text = "Target: " .. p.Name
+                    if p.Character and p.Character:FindFirstChild("Humanoid") then
+                        camera.CameraSubject = p.Character.Humanoid
+                    end
+                end)
+            end
+        end
+    end
+
+    Players.PlayerAdded:Connect(refreshPlayerList)
+    Players.PlayerRemoving:Connect(refreshPlayerList)
+
+    PVListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        PVScrolling.CanvasSize = UDim2.new(0, 0, 0, PVListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 and not capturingKey then
+            if selectedSpectatePlayer ~= nil then
+                resetCameraToOriginalPOV()
+            end
+        end
+    end)
+
+    MockChatInput.FocusLost:Connect(function(enterPressed)
+        if enterPressed and selectedSpectatePlayer and MockChatInput.Text ~= "" then
+            local msg = MockChatInput.Text
+            pcall(function()
+                StarterGui:SetCore("ChatMakeSystemMessage", {
+                    Text = "[" .. selectedSpectatePlayer.Name .. "]: " .. msg,
+                    Color = Color3.fromRGB(255, 255, 0),
+                    Font = Enum.Font.SourceSansBold,
+                    FontSize = Enum.FontSize.Size14
+                })
+            end)
+            MockChatInput.Text = ""
+        end
+    end)
+
+    -- ==========================================
+    -- DYNAMIC COMPASS GENERATOR FUNCTION
+    -- ==========================================
+    local function generateDynamicCompass()
+        if guiParent:FindFirstChild("MulnesDynamicCompass") then
+            guiParent.MulnesDynamicCompass:Destroy()
+        end
+        
+        local CompassGui = Instance.new("ScreenGui")
+        CompassGui.Name = "MulnesDynamicCompass"
+        CompassGui.ResetOnSpawn = false
+        CompassGui.Parent = guiParent
+        
+        local CompassFrame = Instance.new("Frame")
+        CompassFrame.Size = UDim2.new(0, 220, 0, 45)
+        CompassFrame.Position = UDim2.new(0.5, -110, 0, 15)
+        CompassFrame.BackgroundColor3 = hubTheme.PrimaryColor
+        CompassFrame.BackgroundTransparency = 0.3
+        CompassFrame.Active = true
+        CompassFrame.Draggable = true
+        CompassFrame.Parent = CompassGui
+        
+        local compCorner = Instance.new("UICorner")
+        compCorner.CornerRadius = UDim.new(0, 8)
+        compCorner.Parent = CompassFrame
+        local compStroke = Instance.new("UIStroke")
+        compStroke.Color = hubTheme.AccentColor
+        compStroke.Thickness = 1.5
+        compStroke.Parent = CompassFrame
+        
+        local CompassText = Instance.new("TextLabel")
+        CompassText.Size = UDim2.new(1, 0, 1, 0)
+        CompassText.BackgroundTransparency = 1
+        CompassText.Text = "COMPASS: N (0°)"
+        CompassText.TextColor3 = Color3.fromRGB(100, 255, 150)
+        CompassText.Font = Enum.Font.SourceSansBold
+        CompassText.TextSize = 14
+        CompassText.Parent = CompassFrame
+        
+        local CloseComp = Instance.new("TextButton")
+        CloseComp.Size = UDim2.new(0, 20, 0, 20)
+        CloseComp.Position = UDim2.new(1, -22, 0, 2)
+        CloseComp.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        CloseComp.Text = "X"
+        CloseComp.TextColor3 = Color3.fromRGB(255, 255, 255)
+        CloseComp.TextSize = 10
+        CloseComp.Font = Enum.Font.SourceSansBold
+        local ccCorner = Instance.new("UICorner")
+        ccCorner.CornerRadius = UDim.new(0, 4)
+        ccCorner.Parent = CloseComp
+        CloseComp.Parent = CompassFrame
+        
+        CloseComp.MouseButton1Click:Connect(function()
+            CompassGui:Destroy()
+        end)
+        
+        RunService.RenderStepped:Connect(function()
+            if not CompassGui.Parent then return end
+            local lookVec = camera.CFrame.LookVector
+            local angle = math.atan2(-lookVec.X, -lookVec.Z) * (180 / math.pi)
+            if angle < 0 then angle = angle + 360 end
+            
+            local dir = "N"
+            if angle >= 22.5 and angle < 67.5 then dir = "NE"
+            elseif angle >= 67.5 and angle < 112.5 then dir = "E"
+            elseif angle >= 112.5 and angle < 157.5 then dir = "SE"
+            elseif angle >= 157.5 and angle < 202.5 then dir = "S"
+            elseif angle >= 202.5 and angle < 247.5 then dir = "SW"
+            elseif angle >= 247.5 and angle < 292.5 then dir = "W"
+            elseif angle >= 292.5 and angle < 337.5 then dir = "NW"
+            end
+            
+            CompassText.Text = string.format("RADAR: %s (%d°)", dir, math.floor(angle))
+        end)
+    end
+
+    -- ==========================================
+    -- BUG REPORT MENU UI & REASON GATEWAY
+    -- ==========================================
+    local reportMenuOpen = false
+    local ReportMenuGui = Instance.new("ScreenGui")
+    ReportMenuGui.Name = "MulnesReportMenu"
+    ReportMenuGui.ResetOnSpawn = false
+    ReportMenuGui.Parent = guiParent
+
+    local ReportFrame = Instance.new("Frame")
+    ReportFrame.Size = UDim2.new(0, 320, 0, 360)
+    ReportFrame.Position = UDim2.new(0.5, -160, 0.5, -180)
+    ReportFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    ReportFrame.Active = true
+    ReportFrame.Draggable = true
+    ReportFrame.Visible = false
+    ReportFrame.Parent = ReportMenuGui
+
+    local ReportCorner = Instance.new("UICorner")
+    ReportCorner.CornerRadius = UDim.new(0, 8)
+    ReportCorner.Parent = ReportFrame
+    local ReportStroke = Instance.new("UIStroke")
+    ReportStroke.Color = hubTheme.AccentColor
+    ReportStroke.Thickness = 1.5
+    ReportStroke.Parent = ReportFrame
+
+    local ReportTitle = Instance.new("TextLabel")
+    ReportTitle.Size = UDim2.new(1, -35, 0, 35)
+    ReportTitle.Position = UDim2.new(0, 10, 0, 0)
+    ReportTitle.BackgroundTransparency = 1
+    ReportTitle.Text = "Bug Report & Discord Gateway"
+    ReportTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ReportTitle.TextSize = 13
+    ReportTitle.Font = Enum.Font.SourceSansBold
+    ReportTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ReportTitle.Parent = ReportFrame
+
+    local ReportClose = Instance.new("TextButton")
+    ReportClose.Size = UDim2.new(0, 25, 0, 25)
+    ReportClose.Position = UDim2.new(1, -30, 0, 5)
+    ReportClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    ReportClose.Text = "X"
+    ReportClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ReportClose.Font = Enum.Font.SourceSansBold
+    local repClCorner = Instance.new("UICorner")
+    repClCorner.CornerRadius = UDim.new(0, 4)
+    repClCorner.Parent = ReportClose
+    ReportClose.Parent = ReportFrame
+
+    ReportClose.MouseButton1Click:Connect(function()
+        ReportFrame.Visible = false
+        reportMenuOpen = false
+    end)
+
+    local ReportInstr = Instance.new("TextLabel")
+    ReportInstr.Size = UDim2.new(0.9, 0, 0, 45)
+    ReportInstr.Position = UDim2.new(0.05, 0, 0, 42)
+    ReportInstr.BackgroundTransparency = 1
+    ReportInstr.Text = "Please enter a detailed bug reason/description before accessing the Discord web link."
+    ReportInstr.TextColor3 = Color3.fromRGB(200, 200, 200)
+    ReportInstr.Font = Enum.Font.SourceSans
+    ReportInstr.TextSize = 12
+    ReportInstr.TextWrapped = true
+    ReportInstr.TextXAlignment = Enum.TextXAlignment.Left
+    ReportInstr.Parent = ReportFrame
+
+    local ReasonBox = Instance.new("TextBox")
+    ReasonBox.Size = UDim2.new(0.9, 0, 0, 120)
+    ReasonBox.Position = UDim2.new(0.05, 0, 0, 95)
+    ReasonBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    ReasonBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ReasonBox.PlaceholderText = "Describe the bug encountered here (Required)..."
+    ReasonBox.Text = ""
+    ReasonBox.Font = Enum.Font.SourceSans
+    ReasonBox.TextSize = 13
+    ReasonBox.TextWrapped = true
+    ReasonBox.ClearTextOnFocus = false
+    ReasonBox.MultiLine = true
+    local rbCorner = Instance.new("UICorner")
+    rbCorner.CornerRadius = UDim.new(0, 6)
+    rbCorner.Parent = ReasonBox
+    ReasonBox.Parent = ReportFrame
+
+    local StatusLabelRep = Instance.new("TextLabel")
+    StatusLabelRep.Size = UDim2.new(0.9, 0, 0, 25)
+    StatusLabelRep.Position = UDim2.new(0.05, 0, 0, 222)
+    StatusLabelRep.BackgroundTransparency = 1
+    StatusLabelRep.Text = "Status: Reason required to unlock link"
+    StatusLabelRep.TextColor3 = Color3.fromRGB(255, 100, 100)
+    StatusLabelRep.Font = Enum.Font.SourceSansBold
+    StatusLabelRep.TextSize = 12
+    StatusLabelRep.TextXAlignment = Enum.TextXAlignment.Left
+    StatusLabelRep.Parent = ReportFrame
+
+    local SubmitReportBtn = Instance.new("TextButton")
+    SubmitReportBtn.Size = UDim2.new(0.9, 0, 0, 38)
+    SubmitReportBtn.Position = UDim2.new(0.05, 0, 0, 255)
+    SubmitReportBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+    SubmitReportBtn.Text = "Submit Bug & Get Discord Link"
+    SubmitReportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SubmitReportBtn.Font = Enum.Font.SourceSansBold
+    SubmitReportBtn.TextSize = 13
+    local srbCorner = Instance.new("UICorner")
+    srbCorner.CornerRadius = UDim.new(0, 6)
+    srbCorner.Parent = SubmitReportBtn
+    SubmitReportBtn.Parent = ReportFrame
+
+    local discordUrl = "https://discord.com/channels/1532306126857830540/1533004664528703618/threads/1533004948760166450"
+    local unlockedLink = false
+
+    ReasonBox:GetPropertyChangedSignal("Text"):Connect(function()
+        if string.len(string.gsub(ReasonBox.Text, "%s+", "")) >= 5 then
+            StatusLabelRep.Text = "Status: Valid reason provided! Ready to unlock."
+            StatusLabelRep.TextColor3 = Color3.fromRGB(100, 255, 100)
+            SubmitReportBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        else
+            StatusLabelRep.Text = "Status: Reason too short (Min 5 chars)."
+            StatusLabelRep.TextColor3 = Color3.fromRGB(255, 100, 100)
+            SubmitReportBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+        end
+    end)
+
+    SubmitReportBtn.MouseButton1Click:Connect(function()
+        if string.len(string.gsub(ReasonBox.Text, "%s+", "")) >= 5 then
+            unlockedLink = true
+            StatusLabelRep.Text = "Status: Bug Logged Successfully!"
+            SubmitReportBtn.Text = "Copy / Open Link Below"
+            
+            pcall(function()
+                if setclipboard then
+                    setclipboard(discordUrl)
+                end
+            end)
+
+            ReasonBox.Text = "Discord Bug Report Thread Link:\n" .. discordUrl
+            ReasonBox.ClearTextOnFocus = false
+            
+            StarterGui:SetCore("SendNotification", {
+                Title = "Mulnes Hub",
+                Text = "Bug report verified & Discord thread link generated!",
+                Duration = 5
+            })
+        else
+            StarterGui:SetCore("SendNotification", {
+                Title = "Mulnes Hub",
+                Text = "Error: Please enter a valid reason for the bug first!",
+                Duration = 3
+            })
+        end
+    end)
+
+    -- ==========================================
+    -- MULNES AI AGENT TERMINAL WINDOW UI
+    -- ==========================================
+    local aiAgentMenuOpen = false
+
+    local AIAgentMenuGui = Instance.new("ScreenGui")
+    AIAgentMenuGui.Name = "MulnesAIAgentMenu"
+    AIAgentMenuGui.ResetOnSpawn = false
+    AIAgentMenuGui.Parent = guiParent
+
+    local AIAgentFrame = Instance.new("Frame")
+    AIAgentFrame.Size = UDim2.new(0, 380, 0, 460)
+    AIAgentFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
+    AIAgentFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    AIAgentFrame.Active = true
+    AIAgentFrame.Draggable = true
+    AIAgentFrame.Visible = false
+    AIAgentFrame.Parent = AIAgentMenuGui
+
+    local AIAgentCorner = Instance.new("UICorner")
+    AIAgentCorner.CornerRadius = UDim.new(0, 8)
+    AIAgentCorner.Parent = AIAgentFrame
+    local AIStroke = Instance.new("UIStroke")
+    AIStroke.Color = hubTheme.AccentColor
+    AIStroke.Thickness = 1.5
+    AIStroke.Parent = AIAgentFrame
+
+    local AIAgentTitle = Instance.new("TextLabel")
+    AIAgentTitle.Size = UDim2.new(1, -35, 0, 35)
+    AIAgentTitle.Position = UDim2.new(0, 10, 0, 0)
+    AIAgentTitle.BackgroundTransparency = 1
+    AIAgentTitle.Text = "Mulunese AI Agent V35 (Godmode & CFrame Flight Active)"
+    AIAgentTitle.TextColor3 = Color3.fromRGB(180, 100, 255)
+    AIAgentTitle.TextSize = 11
+    AIAgentTitle.Font = Enum.Font.SourceSansBold
+    AIAgentTitle.TextXAlignment = Enum.TextXAlignment.Left
+    AIAgentTitle.Parent = AIAgentFrame
+
+    local AIAgentClose = Instance.new("TextButton")
+    AIAgentClose.Size = UDim2.new(0, 25, 0, 25)
+    AIAgentClose.Position = UDim2.new(1, -30, 0, 5)
+    AIAgentClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    AIAgentClose.Text = "X"
+    AIAgentClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AIAgentClose.Font = Enum.Font.SourceSansBold
+    local aiClCorner = Instance.new("UICorner")
+    aiClCorner.CornerRadius = UDim.new(0, 4)
+    aiClCorner.Parent = AIAgentClose
+    AIAgentClose.Parent = AIAgentFrame
+
+    AIAgentClose.MouseButton1Click:Connect(function()
+        AIAgentFrame.Visible = false
+        aiAgentMenuOpen = false
+    end)
+
+    local AIListLayout = Instance.new("UIListLayout")
+    AIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    AIListLayout.Padding = UDim.new(0, 6)
+    AIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local AIScrolling = Instance.new("ScrollingFrame")
+    AIScrolling.Size = UDim2.new(1, -16, 1, -85)
+    AIScrolling.Position = UDim2.new(0, 8, 0, 40)
+    AIScrolling.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    AIScrolling.BorderSizePixel = 0
+    AIScrolling.ScrollBarThickness = 4
+    AIScrolling.Parent = AIAgentFrame
+    AIListLayout.Parent = AIScrolling
+
+    local function addAIChatBubble(sender, text, color)
+        local bubble = Instance.new("TextLabel")
+        bubble.Size = UDim2.new(0.95, 0, 0, 0)
+        bubble.AutomaticSize = Enum.AutomaticSize.Y
+        bubble.BackgroundTransparency = 1
+        bubble.Text = "[" .. sender .. "]: " .. text
+        bubble.TextColor3 = color
+        bubble.Font = Enum.Font.SourceSans
+        bubble.TextSize = 13
+        bubble.TextWrapped = true
+        bubble.TextXAlignment = Enum.TextXAlignment.Left
+        bubble.Parent = AIScrolling
+        AIScrolling.CanvasSize = UDim2.new(0, 0, 0, AIListLayout.AbsoluteContentSize.Y + 20)
+        AIScrolling.CanvasPosition = Vector2.new(0, AIScrolling.AbsoluteCanvasSize.Y)
+    end
+
+    addAIChatBubble("Mulunese AI (Your Son)", "Greetings, Creator. V35 online with CFrame Fly, CWalk, Godmode, and Protection systems active.", Color3.fromRGB(180, 150, 255))
+
+    local AIInputBox = Instance.new("TextBox")
+    AIInputBox.Size = UDim2.new(0.95, 0, 0, 32)
+    AIInputBox.Position = UDim2.new(0, 8, 1, -40)
+    AIInputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    AIInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AIInputBox.PlaceholderText = "Ask AI agent anything..."
+    AIInputBox.Text = ""
+    AIInputBox.Font = Enum.Font.SourceSansBold
+    AIInputBox.TextSize = 13
+    AIInputBox.ClearTextOnFocus = false
+    local aiInCorner = Instance.new("UICorner")
+    aiInCorner.CornerRadius = UDim.new(0, 4)
+    aiInCorner.Parent = AIInputBox
+    AIInputBox.Parent = AIAgentFrame
+
+    AIInputBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed and AIInputBox.Text ~= "" then
+            local userText = AIInputBox.Text
+            addAIChatBubble("You", userText, Color3.fromRGB(255, 255, 255))
+            AIInputBox.Text = ""
+            task.wait(0.3)
+            addAIChatBubble("Mulunese AI", "Processed V35 query: '" .. userText .. "'. CFrame flight & walk systems fully operational.", Color3.fromRGB(200, 200, 255))
+        end
+    end)
+
+    -- ==========================================
+    -- HUB SETTINGS & THEME / CUSTOM DESIGN MENU UI
+    -- ==========================================
+    local settingsMenuOpen = false
+    local SettingsMenuGui = Instance.new("ScreenGui")
+    SettingsMenuGui.Name = "MulnesSettingsMenu"
+    SettingsMenuGui.ResetOnSpawn = false
+    SettingsMenuGui.Parent = guiParent
+
+    local SettingsFrame = Instance.new("Frame")
+    SettingsFrame.Size = UDim2.new(0, 300, 0, 500)
+    SettingsFrame.Position = UDim2.new(0.5, 160, 0.5, -100)
+    SettingsFrame.BackgroundColor3 = hubTheme.PrimaryColor
+    SettingsFrame.Active = true
+    SettingsFrame.Draggable = true
+    SettingsFrame.Visible = false
+    SettingsFrame.Parent = SettingsMenuGui
+
+    local SettingsCorner = Instance.new("UICorner")
+    SettingsCorner.CornerRadius = UDim.new(0, 8)
+    SettingsCorner.Parent = SettingsFrame
+    local SetStroke = Instance.new("UIStroke")
+    SetStroke.Color = hubTheme.AccentColor
+    SetStroke.Thickness = 1.5
+    SetStroke.Parent = SettingsFrame
+
+    local SettingsTitle = Instance.new("TextLabel")
+    SettingsTitle.Size = UDim2.new(1, -35, 0, 35)
+    SettingsTitle.Position = UDim2.new(0, 10, 0, 0)
+    SettingsTitle.BackgroundTransparency = 1
+    SettingsTitle.Text = "Hub Colors, Animation & Custom Design"
+    SettingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SettingsTitle.TextSize = 13
+    SettingsTitle.Font = Enum.Font.SourceSansBold
+    SettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+    SettingsTitle.Parent = SettingsFrame
+
+    local SettingsClose = Instance.new("TextButton")
+    SettingsClose.Size = UDim2.new(0, 25, 0, 25)
+    SettingsClose.Position = UDim2.new(1, -30, 0, 5)
+    SettingsClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    SettingsClose.Text = "X"
+    SettingsClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SettingsClose.Font = Enum.Font.SourceSansBold
+    local stCorner = Instance.new("UICorner")
+    stCorner.CornerRadius = UDim.new(0, 4)
+    stCorner.Parent = SettingsClose
+    SettingsClose.Parent = SettingsFrame
+
+    SettingsClose.MouseButton1Click:Connect(function()
+        SettingsFrame.Visible = false
+        settingsMenuOpen = false
+    end)
+
+    local SetListLayout = Instance.new("UIListLayout")
+    SetListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    SetListLayout.Padding = UDim.new(0, 6)
+    SetListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local SetScrolling = Instance.new("ScrollingFrame")
+    SetScrolling.Size = UDim2.new(1, -10, 1, -45)
+    SetScrolling.Position = UDim2.new(0, 5, 0, 40)
+    SetScrolling.BackgroundTransparency = 1
+    SetScrolling.ScrollBarThickness = 4
+    SetScrolling.Parent = SettingsFrame
+    SetListLayout.Parent = SetScrolling
+
+    local function updateThemeColors(newPrimary, newAccent)
+        hubTheme.PrimaryColor = newPrimary
+        hubTheme.AccentColor = newAccent
+        
+        local frames = {MainFrame, ESPFrame, MovFrame, PVFrame, AIAgentFrame, SettingsFrame, ReportFrame, ProtFrame}
+        for _, f in pairs(frames) do
+            f.BackgroundColor3 = newPrimary
+            local stroke = f:FindFirstChildOfClass("UIStroke")
+            if stroke then stroke.Color = newAccent end
+        end
+    end
+
+    createSectionHeader("--- PRESET THEMES ---", SetScrolling)
+    local btnThemeDark = createMenuButton("Theme: Dark Minimalist", Color3.fromRGB(30, 30, 35), SetScrolling)
+    local btnThemeNeon = createMenuButton("Theme: Cyberpunk Neon", Color3.fromRGB(20, 10, 30), SetScrolling)
+    local btnThemeOcean = createMenuButton("Theme: Ocean Blue", Color3.fromRGB(15, 30, 45), SetScrolling)
+    local btnThemeCrimson = createMenuButton("Theme: Crimson Blood", Color3.fromRGB(40, 15, 15), SetScrolling)
+
+    btnThemeDark.MouseButton1Click:Connect(function()
+        updateThemeColors(Color3.fromRGB(25, 25, 25), Color3.fromRGB(180, 100, 255))
+    end)
+
+    btnThemeNeon.MouseButton1Click:Connect(function()
+        updateThemeColors(Color3.fromRGB(10, 10, 15), Color3.fromRGB(0, 255, 200))
+    end)
+
+    btnThemeOcean.MouseButton1Click:Connect(function()
+        updateThemeColors(Color3.fromRGB(15, 25, 40), Color3.fromRGB(50, 150, 255))
+    end)
+
+    btnThemeCrimson.MouseButton1Click:Connect(function()
+        updateThemeColors(Color3.fromRGB(35, 15, 15), Color3.fromRGB(255, 50, 50))
+    end)
+
+    createSectionHeader("--- CUSTOM COLOR WHEEL / RGB ---", SetScrolling)
+
+    local function createRGBPicker(title, defaultColor, onColorChanged)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0.95, 0, 0, 32)
+        frame.BackgroundTransparency = 1
+        frame.Parent = SetScrolling
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.4, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = title
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 11
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = frame
+        
+        local function createBox(posX, width, val)
+            local box = Instance.new("TextBox")
+            box.Size = UDim2.new(width, 0, 0.8, 0)
+            box.Position = UDim2.new(posX, 0, 0.1, 0)
+            box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+            box.TextColor3 = Color3.fromRGB(255, 255, 255)
+            box.Text = tostring(math.floor(val * 255))
+            box.Font = Enum.Font.SourceSansBold
+            box.TextSize = 11
+            box.ClearTextOnFocus = false
+            local cCorner = Instance.new("UICorner")
+            cCorner.CornerRadius = UDim.new(0, 4)
+            cCorner.Parent = box
+            box.Parent = frame
+            return box
+        end
+        
+        local rBox = createBox(0.41, 0.18, defaultColor.R)
+        local gBox = createBox(0.61, 0.18, defaultColor.G)
+        local bBox = createBox(0.81, 0.18, defaultColor.B)
+        
+        local function update()
+            local r = tonumber(rBox.Text)
+            local g = tonumber(gBox.Text)
+            local b = tonumber(bBox.Text)
+            if r and g and b then
+                local col = Color3.fromRGB(math.clamp(r, 0, 255), math.clamp(g, 0, 255), math.clamp(b, 0, 255))
+                onColorChanged(col)
+            end
+        end
+        
+        rBox.FocusLost:Connect(update)
+        gBox.FocusLost:Connect(update)
+        bBox.FocusLost:Connect(update)
+        
+        return frame
+    end
+
+    createRGBPicker("Background RGB:", hubTheme.PrimaryColor, function(col)
+        hubTheme.PrimaryColor = col
+        local frames = {MainFrame, ESPFrame, MovFrame, PVFrame, AIAgentFrame, SettingsFrame, ReportFrame, ProtFrame}
+        for _, f in pairs(frames) do
+            f.BackgroundColor3 = col
+        end
+    end)
+
+    createRGBPicker("Outline RGB:", hubTheme.AccentColor, function(col)
+        hubTheme.AccentColor = col
+        local frames = {MainFrame, ESPFrame, MovFrame, PVFrame, AIAgentFrame, SettingsFrame, ReportFrame, ProtFrame}
+        for _, f in pairs(frames) do
+            local stroke = f:FindFirstChildOfClass("UIStroke")
+            if stroke then stroke.Color = col end
+        end
+    end)
+
+    createSectionHeader("--- CUSTOM BACKGROUND IMAGE ID ---", SetScrolling)
+
+    local imageIdFrame = Instance.new("Frame")
+    imageIdFrame.Size = UDim2.new(0.95, 0, 0, 35)
+    imageIdFrame.BackgroundTransparency = 1
+    imageIdFrame.Parent = SetScrolling
+
+    local imageIdInput = Instance.new("TextBox")
+    imageIdInput.Size = UDim2.new(0.65, 0, 0.8, 0)
+    imageIdInput.Position = UDim2.new(0, 0, 0.1, 0)
+    imageIdInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    imageIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    imageIdInput.PlaceholderText = "Enter Image ID..."
+    imageIdInput.Text = ""
+    imageIdInput.Font = Enum.Font.SourceSansBold
+    imageIdInput.TextSize = 12
+    imageIdInput.ClearTextOnFocus = false
+    local iiCorner = Instance.new("UICorner")
+    iiCorner.CornerRadius = UDim.new(0, 4)
+    iiCorner.Parent = imageIdInput
+    imageIdInput.Parent = imageIdFrame
+
+    local applyImageBtn = Instance.new("TextButton")
+    applyImageBtn.Size = UDim2.new(0.3, 0, 0.8, 0)
+    applyImageBtn.Position = UDim2.new(0.7, 0, 0.1, 0)
+    applyImageBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
+    applyImageBtn.Text = "Set Image"
+    applyImageBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    applyImageBtn.Font = Enum.Font.SourceSansBold
+    applyImageBtn.TextSize = 12
+    local aibCorner = Instance.new("UICorner")
+    aibCorner.CornerRadius = UDim.new(0, 4)
+    aibCorner.Parent = applyImageBtn
+    applyImageBtn.Parent = imageIdFrame
+
+    applyImageBtn.MouseButton1Click:Connect(function()
+        local text = imageIdInput.Text
+        local assetId = text:match("%d+")
+        local frames = {MainFrame, ESPFrame, MovFrame, PVFrame, AIAgentFrame, SettingsFrame, ReportFrame, ProtFrame}
+        if assetId then
+            local fullAsset = "rbxassetid://" .. assetId
+            for _, f in pairs(frames) do
+                local bgImg = f:FindFirstChild("MulnesCustomBgImage")
+                if not bgImg then
+                    bgImg = Instance.new("ImageLabel")
+                    bgImg.Name = "MulnesCustomBgImage"
+                    bgImg.Size = UDim2.new(1, 0, 1, 0)
+                    bgImg.BackgroundTransparency = 1
+                    bgImg.ImageTransparency = 0.5
+                    bgImg.ZIndex = f.ZIndex - 1
+                    bgImg.Parent = f
+                    local corner = f:FindFirstChildOfClass("UICorner")
+                    if corner then
+                        local imgCorner = corner:Clone()
+                        imgCorner.Parent = bgImg
+                    end
+                end
+                bgImg.Image = fullAsset
+            end
+            StarterGui:SetCore("SendNotification", {Title = "Mulnes Hub", Text = "Custom background image applied!", Duration = 3})
+        else
+            for _, f in pairs(frames) do
+                local bgImg = f:FindFirstChild("MulnesCustomBgImage")
+                if bgImg then bgImg:Destroy() end
+            end
+            StarterGui:SetCore("SendNotification", {Title = "Mulnes Hub", Text = "Custom background image cleared.", Duration = 3})
+        end
+    end)
+
+    createSectionHeader("--- ANIMATION & SHAPE DESIGN ---", SetScrolling)
+
+    local animSpeedFrame = Instance.new("Frame")
+    animSpeedFrame.Size = UDim2.new(0.95, 0, 0, 35)
+    animSpeedFrame.BackgroundTransparency = 1
+    animSpeedFrame.Parent = SetScrolling
+
+    local animSpeedLabel = Instance.new("TextLabel")
+    animSpeedLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    animSpeedLabel.BackgroundTransparency = 1
+    animSpeedLabel.Text = "Anim Speed (Tween):"
+    animSpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    animSpeedLabel.Font = Enum.Font.SourceSansBold
+    animSpeedLabel.TextSize = 13
+    animSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    animSpeedLabel.Parent = animSpeedFrame
+
+    local animSpeedInput = Instance.new("TextBox")
+    animSpeedInput.Size = UDim2.new(0.35, 0, 0.8, 0)
+    animSpeedInput.Position = UDim2.new(0.65, 0, 0.1, 0)
+    animSpeedInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    animSpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    animSpeedInput.Text = tostring(hubTheme.AnimationSpeed)
+    animSpeedInput.Font = Enum.Font.SourceSansBold
+    animSpeedInput.TextSize = 13
+    animSpeedInput.ClearTextOnFocus = false
+    local asCorner = Instance.new("UICorner")
+    asCorner.CornerRadius = UDim.new(0, 4)
+    asCorner.Parent = animSpeedInput
+    animSpeedInput.Parent = animSpeedFrame
+
+    animSpeedInput.FocusLost:Connect(function()
+        local val = tonumber(animSpeedInput.Text)
+        if val and val >= 0 then hubTheme.AnimationSpeed = val else animSpeedInput.Text = tostring(hubTheme.AnimationSpeed) end
+    end)
+
+    local btnDesignRounded = createMenuButton("Custom Design: Smooth Rounded", Color3.fromRGB(45, 45, 55), SetScrolling)
+    local btnDesignSharp = createMenuButton("Custom Design: Sharp Sci-Fi Edges", Color3.fromRGB(45, 45, 55), SetScrolling)
+
+    btnDesignRounded.MouseButton1Click:Connect(function()
+        local frames = {MainFrame, ESPFrame, MovFrame, PVFrame, AIAgentFrame, SettingsFrame, ReportFrame, ProtFrame}
+        for _, f in pairs(frames) do
+            local corner = f:FindFirstChildOfClass("UICorner")
+            if corner then corner.CornerRadius = UDim.new(0, 8) end
+            local bgImg = f:FindFirstChild("MulnesCustomBgImage")
+            if bgImg then
+                local imgCorner = bgImg:FindFirstChildOfClass("UICorner")
+                if imgCorner then imgCorner.CornerRadius = UDim.new(0, 8) end
+            end
+        end
+        hubTheme.CurrentDesign = "Rounded"
+    end)
+
+    btnDesignSharp.MouseButton1Click:Connect(function()
+        local frames = {MainFrame, ESPFrame, MovFrame, PVFrame, AIAgentFrame, SettingsFrame, ReportFrame, ProtFrame}
+        for _, f in pairs(frames) do
+            local corner = f:FindFirstChildOfClass("UICorner")
+            if corner then corner.CornerRadius = UDim.new(0, 0) end
+            local bgImg = f:FindFirstChild("MulnesCustomBgImage")
+            if bgImg then
+                local imgCorner = bgImg:FindFirstChildOfClass("UICorner")
+                if imgCorner then imgCorner.CornerRadius = UDim.new(0, 0) end
+            end
+        end
+        hubTheme.CurrentDesign = "Sharp"
+    end)
+
+    SetListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        SetScrolling.CanvasSize = UDim2.new(0, 0, 0, SetListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- ==========================================
+    -- POPULATE MAIN HUB BUTTONS
+    -- ==========================================
+    local btnProtMain = createMenuButton("Toggle Protections & Godmode Menu", Color3.fromRGB(65, 45, 75), MainScrolling)
+    local btnESPMain = createMenuButton("Toggle ESP & Aimbot Sub-Menu", Color3.fromRGB(45, 45, 55), MainScrolling)
+    local btnMovMain = createMenuButton("Toggle Movement & Admin Sub-Menu", Color3.fromRGB(55, 75, 45), MainScrolling)
+    local btnPVMain = createMenuButton("Toggle Player View & Mock Chat", Color3.fromRGB(45, 45, 55), MainScrolling)
+    local btnReportMain = createMenuButton("Open Bug Report & Discord Gateway", Color3.fromRGB(150, 75, 45), MainScrolling)
+    local btnAIMain = createMenuButton("Toggle Mulunese AI Agent V35", Color3.fromRGB(75, 45, 85), MainScrolling)
+    local btnCompMain = createMenuButton("Generate Dynamic Compass", Color3.fromRGB(45, 75, 55), MainScrolling)
+    local btnSetsMain = createMenuButton("Hub Colors, Animation & Design", Color3.fromRGB(45, 45, 55), MainScrolling)
+
+    btnProtMain.MouseButton1Click:Connect(function()
+        protectionMenuOpen = not protectionMenuOpen
+        ProtFrame.Visible = protectionMenuOpen
+    end)
+
+    btnESPMain.MouseButton1Click:Connect(function()
+        espSettingsOpen = not espSettingsOpen
+        ESPFrame.Visible = espSettingsOpen
+    end)
+
+    btnMovMain.MouseButton1Click:Connect(function()
+        movementMenuOpen = not movementMenuOpen
+        MovFrame.Visible = movementMenuOpen
+    end)
+
+    btnPVMain.MouseButton1Click:Connect(function()
+        playerViewMenuOpen = not playerViewMenuOpen
+        PVFrame.Visible = playerViewMenuOpen
+        if playerViewMenuOpen then refreshPlayerList() end
+    end)
+
+    btnReportMain.MouseButton1Click:Connect(function()
+        reportMenuOpen = not reportMenuOpen
+        ReportFrame.Visible = reportMenuOpen
+    end)
+
+    btnAIMain.MouseButton1Click:Connect(function()
+        aiAgentMenuOpen = not aiAgentMenuOpen
+        AIAgentFrame.Visible = aiAgentMenuOpen
+    end)
+
+    btnCompMain.MouseButton1Click:Connect(function()
+        generateDynamicCompass()
+    end)
+
+    btnSetsMain.MouseButton1Click:Connect(function()
+        settingsMenuOpen = not settingsMenuOpen
+        SettingsFrame.Visible = settingsMenuOpen
+    end)
+
+    CloseButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+        ESPMenuGui:Destroy()
+        MovementMenuGui:Destroy()
+        PlayerViewMenuGui:Destroy()
+        AIAgentMenuGui:Destroy()
+        SettingsMenuGui:Destroy()
+        ReportMenuGui:Destroy()
+        ProtectionMenuGui:Destroy()
+        if guiParent:FindFirstChild("MulnesDynamicCompass") then
+            guiParent.MulnesDynamicCompass:Destroy()
+        end
+    end)
+
+    local minimized = false
+    MinimizeButton.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        MainScrolling.Visible = not minimized
+        local targetHeight = minimized and 40 or 520
+        local tweenInfo = TweenInfo.new(hubTheme.AnimationSpeed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 300, 0, targetHeight)}):Play()
+    end)
+
+    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        MainScrolling.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- ==========================================
+    -- RUNSERVICE GAME LOOP (V35 PROTECTIONS & ENGINES)
+    -- ==========================================
+    local vehicleFlyBodyVel, vehicleFlyBodyGyro
+
+    RunService.RenderStepped:Connect(function(dt)
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+
+        -- 1. Godmode Protection
+        if protectionSettings.Godmode and hum then
+            hum.Health = hum.MaxHealth
+        end
+
+        -- 2. Clean Hazards (Kill Parts, Lava, Traps)
+        if protectionSettings.CleanHazards then
+            pcall(function()
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") then
+                        local nameLower = obj.Name:lower()
+                        if nameLower:find("kill") or nameLower:find("hazard") or nameLower:find("lava") or nameLower:find("death") or nameLower:find("damage") or nameLower:find("trap") or nameLower:find("spike") or nameLower:find("acid") then
+                            obj.CanTouch = false
+                            local touch = obj:FindFirstChild("TouchInterest")
+                            if touch then touch:Destroy() end
+                        end
+                    end
+                end
+            end)
+        end
+
+        -- 3. Anti-NPC Damage
+        if protectionSettings.AntiNpcDamage then
+            pcall(function()
+                for _, model in pairs(Workspace:GetDescendants()) do
+                    if model:IsA("Model") and not Players:GetPlayerFromCharacter(model) then
+                        local npcHum = model:FindFirstChildOfClass("Humanoid")
+                        if npcHum then
+                            for _, part in pairs(model:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    local touch = part:FindFirstChild("TouchInterest")
+                                    if touch then
+                                        touch:Destroy()
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+
+        -- 4. Anti-Fling Protection
+        if protectionSettings.AntiFling and hrp then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
+
+        -- 5. Anti-Sit State Lock
+        if protectionSettings.AntiSit and hum then
+            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+            if hum.Sit then
+                hum.Sit = false
+            end
+        end
+
+        -- 6. Anti-Freeze Protection
+        if protectionSettings.AntiFreeze and hrp then
+            if hrp.Anchored then
+                hrp.Anchored = false
+            end
+        end
+
+        -- 7. Anti-Crash Safeguard
+        if protectionSettings.AntiCrash then
+            pcall(function()
+                settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            end)
+        end
+
+        -- 8. Anti-Lag Optimizer
+        if protectionSettings.AntiLag then
+            pcall(function()
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                        obj.Enabled = false
+                    elseif obj:IsA("BasePart") then
+                        obj.Material = Enum.Material.SmoothPlastic
+                        obj.Reflectance = 0
+                    end
+                end
+            end)
+        end
+
+        -- 9. TPWalk
+        if moveSettings.TPWalkEnabled and hrp and hum then
+            local moveDir = hum.MoveDirection
+            if moveDir.Magnitude > 0 then
+                hrp.CFrame = hrp.CFrame + (moveDir * moveSettings.TPWalkSpeed * dt)
+            end
+        end
+
+        -- 10. CFrame Walk (CWalk)
+        if moveSettings.CWalkEnabled and hrp and hum then
+            local moveDir = hum.MoveDirection
+            if moveDir.Magnitude > 0 then
+                hrp.CFrame = hrp.CFrame + (moveDir * moveSettings.CWalkSpeed * dt)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+            end
+        end
+
+        -- 11. Vehicle Fly
+        if moveSettings.FlyEnabled and hrp and hum then
+            local targetPart = hrp
+            local isSeated = (hum.SeatPart ~= nil)
+            
+            if isSeated then
+                local seat = hum.SeatPart
+                local model = seat:FindFirstAncestorOfClass("Model")
+                if model and model:FindFirstChild("PrimaryPart") then
+                    targetPart = model.PrimaryPart
+                else
+                    targetPart = seat
+                end
+            end
+
+            if not vehicleFlyBodyVel then
+                vehicleFlyBodyVel = Instance.new("BodyVelocity")
+                vehicleFlyBodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                vehicleFlyBodyVel.Velocity = Vector3.new(0, 0, 0)
+            end
+            vehicleFlyBodyVel.Parent = targetPart
+
+            if not vehicleFlyBodyGyro then
+                vehicleFlyBodyGyro = Instance.new("BodyGyro")
+                vehicleFlyBodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            end
+            vehicleFlyBodyGyro.Parent = targetPart
+            vehicleFlyBodyGyro.CFrame = camera.CFrame
+            
+            local camCF = camera.CFrame
+            local moveVector = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + camCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector - camCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - camCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + camCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) then moveVector = moveVector + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then moveVector = moveVector - Vector3.new(0, 1, 0) end
+            
+            vehicleFlyBodyVel.Velocity = moveVector * moveSettings.FlySpeed
+            
+            if not isSeated then
+                hum.PlatformStand = true
+            end
+        else
+            if vehicleFlyBodyVel then vehicleFlyBodyVel:Destroy(); vehicleFlyBodyVel = nil end
+            if vehicleFlyBodyGyro then vehicleFlyBodyGyro:Destroy(); vehicleFlyBodyGyro = nil end
+            if hum and hum.PlatformStand and not moveSettings.CFrameFlyEnabled and not moveSettings.VFlyEnabled then
+                hum.PlatformStand = false
+                pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+            end
+        end
+
+        -- 12. CFrame Fly (CFly)
+        if moveSettings.CFrameFlyEnabled and hrp and hum then
+            hum.PlatformStand = true
+            local camCF = camera.CFrame
+            local moveVector = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + camCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector - camCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - camCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + camCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) then moveVector = moveVector + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then moveVector = moveVector - Vector3.new(0, 1, 0) end
+            
+            if moveVector.Magnitude > 0 then
+                hrp.CFrame = hrp.CFrame + (moveVector.Unit * moveSettings.FlySpeed * dt)
+            else
+                hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + camCF.LookVector)
+            end
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end
+
+        -- 13. Character Fly (VFly)
+        if moveSettings.VFlyEnabled and hrp and hum then
+            local camCF = camera.CFrame
+            local vMove = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then vMove = vMove + camCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then vMove = vMove - camCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then vMove = vMove - camCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then vMove = vMove + camCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) then vMove = vMove + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then vMove = vMove - Vector3.new(0, 1, 0) end
+            
+            hrp.AssemblyLinearVelocity = vMove * moveSettings.FlySpeed
+            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + camCF.LookVector)
+            hum.PlatformStand = true
+        end
+
+        -- 14. Noclip Engine
+        if moveSettings.NoclipEnabled and char then
+            pcall(function()
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end)
+        end
+
+        -- 15. ESP ENGINE LOOP
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                local pChar = p.Character
+                local pHrp = pChar and pChar:FindFirstChild("HumanoidRootPart")
+                local pHum = pChar and pChar:FindFirstChild("Humanoid")
+                
+                local isTeam = false
+                if aimbotSettings.TeamCheck and p.Team and player.Team and p.Team == player.Team then
+                    isTeam = true
+                end
+
+                local inRange = false
+                if hrp and pHrp then
+                    local distance = (hrp.Position - pHrp.Position).Magnitude
+                    if distance <= espSettings.MaxRange then
+                        inRange = true
+                    end
+                end
+
+                -- Chams
+                if espSettings.Enabled and espSettings.Chams and pChar and not isTeam and inRange then
+                    if not activeHighlights[p] or activeHighlights[p].Parent ~= pChar then
+                        if activeHighlights[p] then activeHighlights[p]:Destroy() end
+                        local hl = Instance.new("Highlight")
+                        hl.Name = "MulnesChams"
+                        hl.Adornee = pChar
+                        hl.FillColor = Color3.fromRGB(255, 50, 50)
+                        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        hl.FillTransparency = 0.5
+                        hl.Parent = pChar
+                        activeHighlights[p] = hl
+                    end
+                else
+                    if activeHighlights[p] then
+                        activeHighlights[p]:Destroy()
+                        activeHighlights[p] = nil
+                    end
+                end
+
+                -- Tracers
+                if espSettings.Enabled and espSettings.Tracers and pHrp and not isTeam and inRange then
+                    local screenPos, onScreen = camera:WorldToViewportPoint(pHrp.Position)
+                    if onScreen then
+                        if not activeTracers[p] then
+                            local line = Drawing.new("Line")
+                            line.Thickness = 1.5
+                            line.Color = Color3.fromRGB(255, 100, 100)
+                            activeTracers[p] = line
+                        end
+                        local line = activeTracers[p]
+                        line.Visible = true
+                        line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                        line.To = Vector2.new(screenPos.X, screenPos.Y)
+                    else
+                        if activeTracers[p] then activeTracers[p].Visible = false end
+                    end
+                else
+                    if activeTracers[p] then
+                        activeTracers[p]:Remove()
+                        activeTracers[p] = nil
+                    end
+                end
+
+                -- Sightline View Cone
+                if espSettings.Enabled and espSettings.Sightline and pHrp and pHum and not isTeam and inRange then
+                    if not activeSightlines[p] then
+                        local line = Drawing.new("Line")
+                        line.Thickness = 2
+                        activeSightlines[p] = line
+                    end
+                    local line = activeSightlines[p]
+                    line.Color = Color3.fromRGB(espSettings.SightlineColorR, espSettings.SightlineColorG, espSettings.SightlineColorB)
+                    
+                    local head = pChar:FindFirstChild("Head")
+                    if head then
+                        local headScreen, headOn = camera:WorldToViewportPoint(head.Position)
+                        local targetWorldPos = head.Position
+                        local dirMode = espSettings.SightlineDirection
+                        local length = espSettings.SightlineLength
+                        
+                        if dirMode == "Front" then
+                            targetWorldPos = head.Position + (head.CFrame.LookVector * length)
+                        elseif dirMode == "Skyward" then
+                            targetWorldPos = head.Position + Vector3.new(0, length, 0)
+                        elseif dirMode == "Back" then
+                            targetWorldPos = head.Position - (head.CFrame.LookVector * length)
+                        elseif dirMode == "Bottom" then
+                            targetWorldPos = head.Position - Vector3.new(0, length, 0)
+                        end
+                        
+                        local lookEndScreen, lookOn = camera:WorldToViewportPoint(targetWorldPos)
+                        if headOn and lookOn then
+                            line.Visible = true
+                            line.From = Vector2.new(headScreen.X, headScreen.Y)
+                            line.To = Vector2.new(lookEndScreen.X, lookEndScreen.Y)
+                        else
+                            line.Visible = false
+                        end
+                    else
+                        line.Visible = false
+                    end
+                else
+                    if activeSightlines[p] then
+                        activeSightlines[p]:Remove()
+                        activeSightlines[p] = nil
+                    end
+                end
+
+                -- 3D World Light Beam
+                if espSettings.Enabled and espSettings.LightBeam and pHrp and not isTeam and inRange then
+                    if not activeLightBeams[p] or not activeLightBeams[p].Parent then
+                        if activeLightBeams[p] then activeLightBeams[p]:Destroy() end
+                        
+                        local beamPart = Instance.new("Part")
+                        beamPart.Name = "MulnesLightBeamPart"
+                        beamPart.Size = Vector3.new(1, 500, 1)
+                        beamPart.Anchored = true
+                        beamPart.CanCollide = false
+                        beamPart.Transparency = 1
+                        beamPart.Parent = Workspace
+                        
+                        local att0 = Instance.new("Attachment", beamPart)
+                        att0.Position = Vector3.new(0, -250, 0)
+                        local att1 = Instance.new("Attachment", beamPart)
+                        att1.Position = Vector3.new(0, 250, 0)
+                        
+                        local beam = Instance.new("Beam")
+                        beam.Name = "MulnesLightBeam"
+                        beam.Attachment0 = att0
+                        beam.Attachment1 = att1
+                        beam.Color = ColorSequence.new(Color3.fromRGB(espSettings.SightlineColorR, espSettings.SightlineColorG, espSettings.SightlineColorB))
+                        beam.Width0 = espSettings.BeamWidth
+                        beam.Width1 = espSettings.BeamWidth
+                        beam.FaceCamera = true
+                        beam.LightEmission = 1
+                        beam.LightInfluence = 0
+                        beam.Parent = beamPart
+                        
+                        activeLightBeams[p] = beamPart
+                    else
+                        local beamPart = activeLightBeams[p]
+                        beamPart.CFrame = pHrp.CFrame
+                        local beam = beamPart:FindFirstChild("MulnesLightBeam")
+                        if beam then
+                            beam.Color = ColorSequence.new(Color3.fromRGB(espSettings.SightlineColorR, espSettings.SightlineColorG, espSettings.SightlineColorB))
+                            beam.Width0 = espSettings.BeamWidth
+                            beam.Width1 = espSettings.BeamWidth
+                        end
+                    end
+                else
+                    if activeLightBeams[p] then
+                        activeLightBeams[p]:Destroy()
+                        activeLightBeams[p] = nil
+                    end
+                end
+            end
+        end
+
+        -- 16. AIMBOT ENGINE LOOP (FIXED WITH WORKING WALL CHECK & AIMBOT KEYBIND LOGIC)
+        local currentTarget = nil
+        local shortestDistance = math.huge
+
+        local isKeyHeld = false
+        pcall(function()
+            if typeof(aimbotSettings.Keybind) == "EnumItem" then
+                if aimbotSettings.Keybind.EnumType == Enum.KeyCode then
+                    isKeyHeld = UserInputService:IsKeyDown(aimbotSettings.Keybind)
+                elseif aimbotSettings.Keybind.EnumType == Enum.UserInputType then
+                    isKeyHeld = UserInputService:IsMouseButtonPressed(aimbotSettings.Keybind)
+                end
+            end
+        end)
+
+        if aimbotSettings.Enabled then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= player then
+                    local pChar = p.Character
+                    local pHrp = pChar and pChar:FindFirstChild("HumanoidRootPart")
+                    local pHum = pChar and pChar:FindFirstChild("Humanoid")
+                    
+                    local isTeam = false
+                    if aimbotSettings.TeamCheck and p.Team and player.Team and p.Team == player.Team then
+                        isTeam = true
+                    end
+
+                    if pHrp and pHum and pHum.Health > 0 and not isTeam and pChar then
+                        local candidateParts = {
+                            pChar:FindFirstChild("Head"),
+                            pChar:FindFirstChild("UpperTorso") or pChar:FindFirstChild("Torso"),
+                            pChar:FindFirstChild("LowerTorso") or pChar:FindFirstChild("HumanoidRootPart")
+                        }
+                        for _, part in pairs(candidateParts) do
+                            if part then
+                                local screenPos, onScreen = camera:WorldToViewportPoint(part.Position)
+                                if onScreen then
+                                    local mousePos = UserInputService:GetMouseLocation()
+                                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                                    if dist < shortestDistance then
+                                        local passesWallCheck = true
+                                        if aimbotSettings.WallCheck then
+                                            local origin = camera.CFrame.Position
+                                            local direction = (part.Position - origin)
+                                            local raycastParams = RaycastParams.new()
+                                            raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+                                            raycastParams.FilterDescendantsInstances = {player.Character, pChar}
+                                            raycastParams.IgnoreWater = true
+                                            
+                                            local result = Workspace:Raycast(origin, direction, raycastParams)
+                                            if result then
+                                                local hitPart = result.Instance
+                                                if hitPart and hitPart.Transparency < 0.5 and hitPart.CanCollide then
+                                                    passesWallCheck = false
+                                                end
+                                            end
+                                        end
+
+                                        if passesWallCheck then
+                                            shortestDistance = dist
+                                            currentTarget = part
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            if isKeyHeld and currentTarget then
+                local targetPos = currentTarget.Position
+                if aimbotSettings.BulletSpreadReactor then
+                    targetPos = targetPos + Vector3.new(0, 0.1, 0)
+                end
+                
+                local currentCamCF = camera.CFrame
+                local targetCamCF = CFrame.new(currentCamCF.Position, targetPos)
+                local smoothness = math.clamp(aimbotSettings.Smoothness, 1, 50)
+                camera.CFrame = currentCamCF:Lerp(targetCamCF, 1 / smoothness)
+            end
+        end
+    end)
+end
+
+LoginButton.MouseButton1Click:Connect(function()
+    if PasswordBox.Text == correctPassword then
+        StatusLabel.Text = "Status: Success! Loading Hub..."
+        StatusLabel.TextColor3 = Color3.fromRGB(50, 200, 50)
+        task.wait(0.5)
+        startMainHub()
+    else
+        StatusLabel.Text = "Status: Incorrect Password!"
+        StatusLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
+    end
+end)
+
+PasswordBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        LoginButton.MouseButton1Click:Fire()
+    end
+end)
