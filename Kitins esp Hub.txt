@@ -1,0 +1,327 @@
+-- Kitin's Advanced ESP Hub with Transparent-Aware Light Beams
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+if not Drawing then
+    warn("Drawing library is not supported by your current executor.")
+    return
+end
+
+-- Create GUI Container
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "KitinESPMenu"
+ScreenGui.ResetOnSpawn = false
+
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = CoreGui
+else
+    pcall(function()
+        ScreenGui.Parent = CoreGui
+    end)
+end
+if ScreenGui.Parent ~= CoreGui then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 340, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -170, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Top Bar (Draggable Header)
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 8)
+TopBarCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Kitin's ESP Hub"
+Title.TextColor3 = Color3.fromRGB(240, 240, 240)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -32, 0, 2)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(220, 60, 60)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = TopBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Hide / Minimize Button
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 30, 0, 30)
+HideBtn.Position = UDim2.new(1, -64, 0, 2)
+HideBtn.BackgroundTransparency = 1
+HideBtn.Text = "-"
+HideBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+HideBtn.TextSize = 16
+HideBtn.Font = Enum.Font.GothamBold
+HideBtn.Parent = TopBar
+
+local containerVisible = true
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -20, 1, -45)
+Container.Position = UDim2.new(0, 10, 0, 40)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.CanvasSize = UDim2.new(0, 0, 0, 250)
+Container.ScrollBarThickness = 3
+Container.Parent = MainFrame
+
+HideBtn.MouseButton1Click:Connect(function()
+    containerVisible = not containerVisible
+    Container.Visible = containerVisible
+    MainFrame.Size = containerVisible and UDim2.new(0, 340, 0, 380) or UDim2.new(0, 340, 0, 35)
+    HideBtn.Text = containerVisible and "-" or "+"
+end)
+
+-- Draggable Logic
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- UI Toggle Creator Helper
+local yOffset = 10
+local function createToggle(name, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Position = UDim2.new(0, 0, 0, yOffset)
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.BorderSizePixel = 0
+    btn.Text = "  " .. name .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.Gotham
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = Container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local status = false
+    btn.MouseButton1Click:Connect(function()
+        status = not status
+        btn.Text = "  " .. name .. ": " .. (status and "ON" or "OFF")
+        btn.BackgroundColor3 = status and Color3.fromRGB(46, 139, 87) or Color3.fromRGB(35, 35, 35)
+        btn.TextColor3 = status and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
+        callback(status)
+    end)
+
+    yOffset = yOffset + 43
+    Container.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
+end
+
+-- ESP Configuration Table
+getgenv().KitinESP = {
+    LightBeam = false,
+    Box = false,
+    NameTag = false,
+    Distance = false,
+    Chams = false
+}
+
+createToggle("Light Beam (Transparent LOS)", function(v) getgenv().KitinESP.LightBeam = v end)
+createToggle("Box ESP", function(v) getgenv().KitinESP.Box = v end)
+createToggle("Name & Health ESP", function(v) getgenv().KitinESP.NameTag = v end)
+createToggle("Distance ESP", function(v) getgenv().KitinESP.Distance = v end)
+createToggle("Chams / Highlight ESP", function(v) getgenv().KitinESP.Chams = v end)
+
+-- ESP Cache Storage
+local espCache = {}
+
+local function cleanupESP(player)
+    if espCache[player] then
+        for _, obj in pairs(espCache[player]) do
+            if typeof(obj) == "Instance" then
+                obj:Destroy()
+            elseif obj.Remove then
+                obj:Remove()
+            end
+        end
+        espCache[player] = nil
+    end
+end
+
+Players.PlayerRemoving:Connect(cleanupESP)
+
+-- Transparent Line-of-Sight Raycast Check
+local function hasOpenLOS(origin, targetPos, targetCharacter)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.IgnoreWater = true
+    
+    local ignoreList = {LocalPlayer.Character, targetCharacter}
+    rayParams.FilterDescendantsInstances = ignoreList
+    
+    local currentOrigin = origin
+    local direction = targetPos - origin
+    
+    for _ = 1, 8 do
+        local result = workspace:Raycast(currentOrigin, direction, rayParams)
+        if not result then
+            return true -- Completely clear path
+        end
+        
+        local hitPart = result.Instance
+        -- Ignore transparent parts or non-collidable parts to shoot through them
+        if hitPart.Transparency > 0 or not hitPart.CanCollide then
+            table.insert(ignoreList, hitPart)
+            rayParams.FilterDescendantsInstances = ignoreList
+            currentOrigin = result.Position + (direction.Unit * 0.1)
+        else
+            return false -- Blocked by a solid opaque wall
+        end
+    end
+    return false
+end
+
+-- Main Render Loop
+RunService.RenderStepped:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if char and rootPart and humanoid and humanoid.Health > 0 then
+                if not espCache[player] then
+                    espCache[player] = {
+                        Beam = Drawing.new("Line"),
+                        Box = Drawing.new("Square"),
+                        Name = Drawing.new("Text"),
+                        Highlight = Instance.new("Highlight")
+                    }
+                    espCache[player].Beam.Thickness = 1.5
+                    espCache[player].Box.Thickness = 1
+                    espCache[player].Box.Filled = false
+                    espCache[player].Name.Size = 13
+                    espCache[player].Name.Center = true
+                    espCache[player].Name.Outline = true
+                    espCache[player].Name.Color = Color3.fromRGB(255, 255, 255)
+                    
+                    espCache[player].Highlight.Parent = char
+                    espCache[player].Highlight.Enabled = false
+                    espCache[player].Highlight.FillColor = Color3.fromRGB(0, 180, 255)
+                    espCache[player].Highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                end
+                
+                local cache = espCache[player]
+                local rootPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                
+                -- Light Beam Handler
+                if getgenv().KitinESP.LightBeam and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local myRoot = LocalPlayer.Character.HumanoidRootPart
+                    local clearPath = hasOpenLOS(myRoot.Position, rootPart.Position, char)
+                    
+                    if onScreen and clearPath then
+                        local myScreenPos = Camera:WorldToViewportPoint(myRoot.Position)
+                        cache.Beam.From = Vector2.new(myScreenPos.X, myScreenPos.Y)
+                        cache.Beam.To = Vector2.new(rootPos.X, rootPos.Y)
+                        cache.Beam.Color = Color3.fromRGB(0, 255, 100)
+                        cache.Beam.Visible = true
+                    else
+                        cache.Beam.Visible = false
+                    end
+                else
+                    cache.Beam.Visible = false
+                end
+                
+                -- Box ESP Handler
+                if getgenv().KitinESP.Box and onScreen then
+                    local head = char:FindFirstChild("Head")
+                    if head then
+                        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                        local legPos = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
+                        local height = math.abs(headPos.Y - legPos.Y)
+                        local width = height / 2
+                        
+                        cache.Box.Size = Vector2.new(width, height)
+                        cache.Box.Position = Vector2.new(rootPos.X - width / 2, headPos.Y)
+                        cache.Box.Color = Color3.fromRGB(255, 50, 50)
+                        cache.Box.Visible = true
+                    else
+                        cache.Box.Visible = false
+                    end
+                else
+                    cache.Box.Visible = false
+                end
+                
+                -- Name & Distance Handler
+                if (getgenv().KitinESP.NameTag or getgenv().KitinESP.Distance) and onScreen then
+                    local labelText = player.Name
+                    if getgenv().KitinESP.Distance and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local distance = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude)
+                        labelText = labelText .. " [" .. distance .. "m]"
+                    end
+                    cache.Name.Text = labelText
+                    cache.Name.Position = Vector2.new(rootPos.X, rootPos.Y - 45)
+                    cache.Name.Visible = true
+                else
+                    cache.Name.Visible = false
+                end
+                
+                -- Chams Handler
+                cache.Highlight.Enabled = getgenv().KitinESP.Chams
+            else
+                cleanupESP(player)
+            end
+        end
+    end
+end)
