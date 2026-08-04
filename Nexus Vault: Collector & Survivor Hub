@@ -1,4 +1,4 @@
--- Nexus Vault: Collector & Survivor Hub with Advanced Sub-Menu Configurations
+-- Nexus Vault: Collector & Survivor Hub (Fixed Instant-Stop Toggle Logic)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -196,7 +196,7 @@ local function createSidebarButton(name, targetTab)
     Sidebar.CanvasSize = UDim2.new(0, 0, 0, tabY)
 end
 
--- Create Tabs (Menus with Sub-menus & Configurations)
+-- Create Tabs
 local tabSurvivor = createTabContent("Survivor Teleport")
 createSidebarButton("Survivor Teleport", tabSurvivor)
 tabSurvivor.Visible = true
@@ -215,7 +215,7 @@ createSidebarButton("Diamond Teleport", tabDiamonds)
 local tabMisc = createTabContent("Misc & Settings")
 createSidebarButton("Misc & Settings", tabMisc)
 
--- UI Element Helpers for Config Sub-menus
+-- UI Element Helpers
 local function addSectionHeader(tab, text)
     local yPos = #tab:GetChildren() * 42
     local label = Instance.new("TextLabel")
@@ -286,11 +286,13 @@ local function addConfigButton(tab, name, options, callback)
 end
 
 
--- ==================== TELEPORT HELPER FUNCTION ====================
-local function executeTeleport(targetPart, mode, speedVal)
+-- ==================== RESPONSIVE TELEPORT HELPER ====================
+local function executeTeleport(targetPart, mode, speedVal, getState)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local hrp = char.HumanoidRootPart
+    
+    if getState and not getState() then return end
     local destCF = targetPart.CFrame + Vector3.new(0, 3, 0)
 
     if mode == "Fast" then
@@ -298,21 +300,34 @@ local function executeTeleport(targetPart, mode, speedVal)
     elseif mode == "Slow" then
         local steps = 15
         for i = 1, steps do
+            if getState and not getState() then return end
             hrp.CFrame = hrp.CFrame:Lerp(destCF, i / steps)
             task.wait(0.01)
         end
     elseif mode == "Tween" then
         local dist = (hrp.Position - targetPart.Position).Magnitude
-        local duration = dist / (speedVal or 60)
+        local duration = math.max(0.1, dist / (speedVal or 60))
         local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = destCF})
         tween:Play()
+        
+        local heartbeatConn
+        if getState then
+            heartbeatConn = RunService.Heartbeat:Connect(function()
+                if not getState() then
+                    tween:Cancel()
+                    if heartbeatConn then heartbeatConn:Disconnect() end
+                end
+            end)
+        end
+        
         tween.Completed:Wait()
+        if heartbeatConn then heartbeatConn:Disconnect() end
     end
 end
 
 
 -- ==================== TAB 1: SURVIVOR TELEPORT ====================
-addSectionHeader(tabSurvivor, "Survivor Finder Configuration (Sub-Menu)")
+addSectionHeader(tabSurvivor, "Survivor Configuration")
 local survivorMode = "Fast"
 addConfigButton(tabSurvivor, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) survivorMode = v end)
 
@@ -323,26 +338,33 @@ addSectionHeader(tabSurvivor, "Execution Control")
 local survivorActive = false
 addToggle(tabSurvivor, "Auto-Teleport to 'Survivor'", function(state)
     survivorActive = state
-    task.spawn(function()
-        while survivorActive do
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj.Name == "Survivor" and obj:IsA("Model") then
-                    local h = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-                    if h then
-                        executeTeleport(h, survivorMode, survivorSpeed)
-                        task.wait(0.5)
-                        break
+    if survivorActive then
+        task.spawn(function()
+            while survivorActive do
+                local found = false
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if not survivorActive then break end
+                    if obj.Name == "Survivor" and obj:IsA("Model") then
+                        local h = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+                        if h then
+                            found = true
+                            executeTeleport(h, survivorMode, survivorSpeed, function() return survivorActive end)
+                            task.wait(0.2)
+                            break
+                        end
                     end
                 end
+                if not found then
+                    task.wait(0.5)
+                end
             end
-            task.wait(0.2)
-        end
-    end)
+        end)
+    end
 end)
 
 
 -- ==================== TAB 2: COIN TELEPORT ====================
-addSectionHeader(tabCoins, "Coin Teleport Configuration (Sub-Menu)")
+addSectionHeader(tabCoins, "Coin Configuration")
 local coinMode = "Tween"
 addConfigButton(tabCoins, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) coinMode = v end)
 
@@ -353,22 +375,29 @@ addSectionHeader(tabCoins, "Execution Control")
 local coinActive = false
 addToggle(tabCoins, "Auto-Farm Coins", function(state)
     coinActive = state
-    task.spawn(function()
-        while coinActive do
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if (obj.Name == "Coin" or obj.Name == "Coins" or obj.Name:lower():find("coin")) and obj:IsA("BasePart") then
-                    executeTeleport(obj, coinMode, coinSpeed)
-                    task.wait(0.1)
+    if coinActive then
+        task.spawn(function()
+            while coinActive do
+                local found = false
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if not coinActive then break end
+                    if (obj.Name == "Coin" or obj.Name == "Coins" or obj.Name:lower():find("coin")) and obj:IsA("BasePart") then
+                        found = true
+                        executeTeleport(obj, coinMode, coinSpeed, function() return coinActive end)
+                        task.wait(0.1)
+                    end
+                end
+                if not found then
+                    task.wait(0.5)
                 end
             end
-            task.wait(0.5)
-        end
-    end)
+        end)
+    end
 end)
 
 
 -- ==================== TAB 3: ORB TELEPORT ====================
-addSectionHeader(tabOrbs, "Orb Teleport Configuration (Sub-Menu)")
+addSectionHeader(tabOrbs, "Orb Configuration")
 local orbMode = "Tween"
 addConfigButton(tabOrbs, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) orbMode = v end)
 
@@ -379,22 +408,29 @@ addSectionHeader(tabOrbs, "Execution Control")
 local orbActive = false
 addToggle(tabOrbs, "Auto-Farm Orbs", function(state)
     orbActive = state
-    task.spawn(function()
-        while orbActive do
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if (obj.Name == "Orb" or obj.Name == "Orbs" or obj.Name:lower():find("orb")) and obj:IsA("BasePart") then
-                    executeTeleport(obj, orbMode, orbSpeed)
-                    task.wait(0.1)
+    if orbActive then
+        task.spawn(function()
+            while orbActive do
+                local found = false
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if not orbActive then break end
+                    if (obj.Name == "Orb" or obj.Name == "Orbs" or obj.Name:lower():find("orb")) and obj:IsA("BasePart") then
+                        found = true
+                        executeTeleport(obj, orbMode, orbSpeed, function() return orbActive end)
+                        task.wait(0.1)
+                    end
+                end
+                if not found then
+                    task.wait(0.5)
                 end
             end
-            task.wait(0.5)
-        end
-    end)
+        end)
+    end
 end)
 
 
 -- ==================== TAB 4: DIAMOND TELEPORT ====================
-addSectionHeader(tabDiamonds, "Diamond Teleport Configuration (Sub-Menu)")
+addSectionHeader(tabDiamonds, "Diamond Configuration")
 local diamondMode = "Tween"
 addConfigButton(tabDiamonds, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) diamondMode = v end)
 
@@ -405,17 +441,24 @@ addSectionHeader(tabDiamonds, "Execution Control")
 local diamondActive = false
 addToggle(tabDiamonds, "Auto-Farm Diamonds / Gems", function(state)
     diamondActive = state
-    task.spawn(function()
-        while diamondActive do
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if (obj.Name == "Diamond" or obj.Name == "Gem" or obj.Name:lower():find("diamond") or obj.Name:lower():find("gem")) and obj:IsA("BasePart") then
-                    executeTeleport(obj, diamondMode, diamondSpeed)
-                    task.wait(0.1)
+    if diamondActive then
+        task.spawn(function()
+            while diamondActive do
+                local found = false
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if not diamondActive then break end
+                    if (obj.Name == "Diamond" or obj.Name == "Gem" or obj.Name:lower():find("diamond") or obj.Name:lower():find("gem")) and obj:IsA("BasePart") then
+                        found = true
+                        executeTeleport(obj, diamondMode, diamondSpeed, function() return diamondActive end)
+                        task.wait(0.1)
+                    end
+                end
+                if not found then
+                    task.wait(0.5)
                 end
             end
-            task.wait(0.5)
-        end
-    end)
+        end)
+    end
 end)
 
 
