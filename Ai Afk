@@ -1,0 +1,289 @@
+-- ==========================================
+-- STANDALONE MULNES BOTPLAY & AUTONOMOUS AI
+-- ==========================================
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local StarterGui = game:GetService("StarterGui")
+local PathfindingService = game:GetService("PathfindingService")
+
+local player = Players.LocalPlayer
+local guiParent = pcall(function() return CoreGui end) and CoreGui or player:WaitForChild("PlayerGui")
+
+-- Cleanup existing standalone menu if present
+if guiParent:FindFirstChild("MulnesBotplayMenuStandalone") then
+    guiParent.MulnesBotplayMenuStandalone:Destroy()
+end
+
+local botplaySettings = {
+    Enabled = false,
+    AFKWalk = false,
+    Aimbot = false,
+    AutoAttack = false,
+    SmartJump = true,
+    ReactionDelay = 0.05,
+    CPS = 2 -- 2 clicks per second as requested
+}
+
+local hubTheme = {
+    PrimaryColor = Color3.fromRGB(25, 25, 25),
+    AccentColor = Color3.fromRGB(180, 100, 255)
+}
+
+local BotplayMenuGui = Instance.new("ScreenGui")
+BotplayMenuGui.Name = "MulnesBotplayMenuStandalone"
+BotplayMenuGui.ResetOnSpawn = false
+BotplayMenuGui.Parent = guiParent
+
+local BotFrame = Instance.new("Frame")
+BotFrame.Size = UDim2.new(0, 300, 0, 440)
+BotFrame.Position = UDim2.new(0.5, -150, 0.5, -220)
+BotFrame.BackgroundColor3 = hubTheme.PrimaryColor
+BotFrame.Active = true
+BotFrame.Draggable = true
+BotFrame.Parent = BotplayMenuGui
+
+local BotCorner = Instance.new("UICorner")
+BotCorner.CornerRadius = UDim.new(0, 8)
+BotCorner.Parent = BotFrame
+
+local BotStroke = Instance.new("UIStroke")
+BotStroke.Color = hubTheme.AccentColor
+BotStroke.Thickness = 1.5
+BotStroke.Parent = BotFrame
+
+local BotTitle = Instance.new("TextLabel")
+BotTitle.Size = UDim2.new(1, -35, 0, 35)
+BotTitle.Position = UDim2.new(0, 10, 0, 0)
+BotTitle.BackgroundTransparency = 1
+BotTitle.Text = "Mulnes Autonomous Botplay (AI)"
+BotTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+BotTitle.TextSize = 13
+BotTitle.Font = Enum.Font.SourceSansBold
+BotTitle.TextXAlignment = Enum.TextXAlignment.Left
+BotTitle.Parent = BotFrame
+
+local BotClose = Instance.new("TextButton")
+BotClose.Size = UDim2.new(0, 25, 0, 25)
+BotClose.Position = UDim2.new(1, -30, 0, 5)
+BotClose.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+BotClose.Text = "X"
+BotClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+BotClose.Font = Enum.Font.SourceSansBold
+local btclCorner = Instance.new("UICorner")
+btclCorner.CornerRadius = UDim.new(0, 4)
+btclCorner.Parent = BotClose
+BotClose.Parent = BotFrame
+
+BotClose.MouseButton1Click:Connect(function()
+    BotplayMenuGui:Destroy()
+end)
+
+local BotListLayout = Instance.new("UIListLayout")
+BotListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+BotListLayout.Padding = UDim.new(0, 6)
+BotListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local BotScrolling = Instance.new("ScrollingFrame")
+BotScrolling.Size = UDim2.new(1, -10, 1, -45)
+BotScrolling.Position = UDim2.new(0, 5, 0, 40)
+BotScrolling.BackgroundTransparency = 1
+BotScrolling.ScrollBarThickness = 4
+BotScrolling.Parent = BotFrame
+BotListLayout.Parent = BotScrolling
+
+local function createSectionHeader(text, parent)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.95, 0, 0, 22)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(180, 100, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    return label
+end
+
+local function createToggleBtn(name, key, parent, targetTable)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.95, 0, 0, 30)
+    local state = targetTable[key]
+    btn.BackgroundColor3 = state and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(90, 90, 90)
+    btn.Text = name .. ": " .. (state and "ON" or "OFF")
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 13
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = btn
+    btn.Parent = parent
+    
+    btn.MouseButton1Click:Connect(function()
+        targetTable[key] = not targetTable[key]
+        local newState = targetTable[key]
+        btn.BackgroundColor3 = newState and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(90, 90, 90)
+        btn.Text = name .. ": " .. (newState and "ON" or "OFF")
+    end)
+    return btn
+end
+
+createSectionHeader("--- AUTONOMOUS BOTPLAY ---", BotScrolling)
+createToggleBtn("Botplay Master Switch", "Enabled", BotScrolling, botplaySettings)
+createToggleBtn("AFK Auto-Walk / Wander", "AFKWalk", BotScrolling, botplaySettings)
+createToggleBtn("Smart Aimbot (Ignore Team/Glass)", "Aimbot", BotScrolling, botplaySettings)
+createToggleBtn("Auto Attack (2 CPS + Crouch C)", "AutoAttack", BotScrolling, botplaySettings)
+createToggleBtn("Smart Gap Jump & Stair Safety", "SmartJump", BotScrolling, botplaySettings)
+
+BotListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    BotScrolling.CanvasSize = UDim2.new(0, 0, 0, BotListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- AI Runtime Logic: Target Selection with Transparent Wall & Team Check
+local function getValidEnemyTarget()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local myRoot = character.HumanoidRootPart
+    local nearestTarget = nil
+    local shortestDistance = math.huge
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+            if p.Character.Humanoid.Health > 0 then
+                -- Team Check
+                local isTeammate = false
+                if player.Team and p.Team and player.Team == p.Team then
+                    isTeammate = true
+                end
+
+                if not isTeammate then
+                    local targetRoot = p.Character.HumanoidRootPart
+                    local distance = (myRoot.Position - targetRoot.Position).Magnitude
+
+                    -- Raycast check for wall/transparent parts line-of-sight
+                    local rayParams = RaycastParams.new()
+                    rayParams.FilterDescendantsInstances = {character}
+                    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                    rayParams.IgnoreWater = true
+
+                    local origin = myRoot.Position + Vector3.new(0, 2, 0)
+                    local direction = (targetRoot.Position - origin)
+                    local rayResult = workspace:Raycast(origin, direction, rayParams)
+
+                    local hasLineOfSight = true
+                    if rayResult and rayResult.Instance then
+                        -- Check if blocking part is transparent or non-collidable (glass windows, transparent barriers)
+                        if rayResult.Instance.Transparency > 0 or not rayResult.Instance.CanCollide then
+                            hasLineOfSight = true -- Can see and aim through transparent parts!
+                        else
+                            hasLineOfSight = false -- Blocked by a solid opaque wall
+                        end
+                    end
+
+                    if hasLineOfSight and distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestTarget = targetRoot
+                    end
+                end
+            end
+        end
+    end
+    return nearestTarget
+end
+
+-- Autonomous AI & Combat Loop
+local lastClickTick = 0
+local wanderTarget = nil
+local wanderTimer = 0
+
+RunService.RenderStepped:Connect(function(dt)
+    if not botplaySettings.Enabled then return end
+
+    local character = player.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+
+    -- 1. Target Acquisition & Aimbot
+    local target = nil
+    if botplaySettings.Aimbot then
+        target = getValidEnemyTarget()
+        if target then
+            -- Smoothly aim camera/character at the enemy
+            rootPart.CFrame = CFrame.new(rootPart.Position, Vector3.new(target.Position.X, rootPart.Position.Y, target.Position.Z))
+        end
+    end
+
+    -- 2. Combat Automation (2 CPS Left-click + Crouch 'C')
+    if botplaySettings.AutoAttack and target then
+        local currentTick = tick()
+        if currentTick - lastClickTick >= 0.5 then -- 2 clicks per second (1/2 = 0.5s interval)
+            lastClickTick = currentTick
+            pcall(function()
+                VirtualUser:Button1Down(Vector2.new(0, 0))
+                task.wait(0.04)
+                VirtualUser:Button1Up(Vector2.new(0, 0))
+            end)
+        end
+
+        -- Simulate crouching with 'C' key when engaged with enemy
+        pcall(function()
+            keypress(0x43) -- 'C' key hex code
+            task.wait(0.05)
+            keyrelease(0x43)
+        end)
+    end
+
+    -- 3. AFK Walking & Navigation
+    if botplaySettings.AFKWalk then
+        if target then
+            -- Move directly towards the detected enemy
+            humanoid:MoveTo(target.Position)
+        else
+            -- Wander around automatically when idling AFK
+            wanderTimer = wanderTimer - dt
+            if wanderTimer <= 0 or not wanderTarget then
+                wanderTimer = math.random(4, 8)
+                local randomOffset = Vector3.new(math.random(-30, 30), 0, math.random(-30, 30))
+                wanderTarget = rootPart.Position + randomOffset
+            end
+            humanoid:MoveTo(wanderTarget)
+        end
+    end
+
+    -- 4. Smart Gap Jump & Stair Safety Logic
+    if botplaySettings.SmartJump then
+        local lookVector = rootPart.CFrame.LookVector
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {character}
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+        -- Check if walking up or down stairs to prevent false jumping
+        local isStairsOrRamp = false
+        local forwardCheck = workspace:Raycast(rootPart.Position, lookVector * 4, rayParams)
+        if forwardCheck and forwardCheck.Instance then
+            local partName = string.lower(forwardCheck.Instance.Name)
+            if string.find(partName, "stair") or string.find(partName, "step") or string.find(partName, "ramp") or string.find(partName, "slant") then
+                isStairsOrRamp = true
+            end
+        end
+
+        -- Check for a gap ahead (space in the middle where ground drops off)
+        local gapCheckPos = rootPart.Position + (lookVector * 4) + Vector3.new(0, 2, 0)
+        local gapRay = workspace:Raycast(gapCheckPos, Vector3.new(0, -8, 0), rayParams)
+
+        -- If there is a gap ahead, no ground is found, AND we are not on stairs -> jump across safely!
+        if not gapRay and not isStairsOrRamp then
+            humanoid.Jump = true
+        end
+    end
+end)
+
+StarterGui:SetCore("SendNotification", {
+    Title = "Mulnes Botplay AI",
+    Text = "Autonomous AFK AI Script Loaded Successfully!",
+    Duration = 3
+})
