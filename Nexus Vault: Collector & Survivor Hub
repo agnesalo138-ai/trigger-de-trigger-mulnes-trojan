@@ -1,10 +1,11 @@
--- Nexus Vault: Collector & Survivor Hub (Fixed Instant-Stop Toggle Logic)
+-- Nexus Vault: Collector, Survivor & ESP Hub (MM2 Role Detection Included)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -28,8 +29,8 @@ end
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 620, 0, 450)
-MainFrame.Position = UDim2.new(0.5, -310, 0.5, -225)
+MainFrame.Size = UDim2.new(0, 640, 0, 460)
+MainFrame.Position = UDim2.new(0.5, -320, 0.5, -230)
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -59,7 +60,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🛡️ Nexus Vault | Collector & Survivor Hub"
+Title.Text = "🛡️ Nexus Vault | Collector, Survivor & ESP Hub"
 Title.TextColor3 = Color3.fromRGB(0, 162, 255)
 Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
@@ -100,7 +101,7 @@ HideBtn.MouseButton1Click:Connect(function()
             child.Visible = uiVisible
         end
     end
-    MainFrame.Size = uiVisible and UDim2.new(0, 620, 0, 450) or UDim2.new(0, 620, 0, 40)
+    MainFrame.Size = uiVisible and UDim2.new(0, 640, 0, 460) or UDim2.new(0, 640, 0, 40)
     HideBtn.Text = uiVisible and "-" or "+"
 end)
 
@@ -138,7 +139,7 @@ Sidebar.Size = UDim2.new(0, 160, 1, -50)
 Sidebar.Position = UDim2.new(0, 8, 0, 45)
 Sidebar.BackgroundTransparency = 1
 Sidebar.BorderSizePixel = 0
-Sidebar.CanvasSize = UDim2.new(0, 0, 0, 300)
+Sidebar.CanvasSize = UDim2.new(0, 0, 0, 350)
 Sidebar.ScrollBarThickness = 2
 Sidebar.Parent = MainFrame
 
@@ -197,11 +198,14 @@ local function createSidebarButton(name, targetTab)
 end
 
 -- Create Tabs
-local tabSurvivor = createTabContent("Survivor Teleport")
-createSidebarButton("Survivor Teleport", tabSurvivor)
-tabSurvivor.Visible = true
+local tabESP = createTabContent("ESP Menu")
+createSidebarButton("ESP Menu", tabESP)
+tabESP.Visible = true
 Sidebar:GetChildren()[1].BackgroundColor3 = Color3.fromRGB(0, 120, 210)
 Sidebar:GetChildren()[1].TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local tabSurvivor = createTabContent("Survivor Teleport")
+createSidebarButton("Survivor Teleport", tabSurvivor)
 
 local tabCoins = createTabContent("Coin Teleport")
 createSidebarButton("Coin Teleport", tabCoins)
@@ -286,6 +290,77 @@ local function addConfigButton(tab, name, options, callback)
 end
 
 
+-- ==================== TAB 1: ESP MENU ====================
+addSectionHeader(tabESP, "ESP Game Type Configuration")
+local espGameType = "MM2 (Murder Mystery 2)"
+addConfigButton(tabESP, "ESP Mode / Game", {"MM2 (Murder Mystery 2)", "Standard Chams"}, function(v) espGameType = v end)
+
+addSectionHeader(tabESP, "ESP Execution")
+local espActive = false
+addToggle(tabESP, "Enable Player ESP", function(state)
+    espActive = state
+    task.spawn(function()
+        while espActive do
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character then
+                    local char = p.Character
+                    local hl = char:FindFirstChild("NexusESPHighlight") or Instance.new("Highlight")
+                    hl.Name = "NexusESPHighlight"
+                    hl.Parent = char
+                    hl.Enabled = espActive
+
+                    if espGameType:find("MM2") then
+                        -- MM2 Role Detection Logic: Knife = Red, Gun = Blue, Other/Innocent = Green
+                        local hasKnife = false
+                        local hasGun = false
+
+                        -- Check character tools
+                        for _, item in ipairs(char:GetChildren()) do
+                            if item:IsA("Tool") then
+                                local lname = item.Name:lower()
+                                if lname:find("knife") or lname:find("dagger") then hasKnife = true end
+                                if lname:find("gun") or lname:find("revolver") or lname:find("sheriff") then hasGun = true end
+                            end
+                        end
+
+                        -- Check backpack tools
+                        local bp = p:FindFirstChild("Backpack")
+                        if bp then
+                            for _, item in ipairs(bp:GetChildren()) do
+                                if item:IsA("Tool") then
+                                    local lname = item.Name:lower()
+                                    if lname:find("knife") or lname:find("dagger") then hasKnife = true end
+                                    if lname:find("gun") or lname:find("revolver") or lname:find("sheriff") then hasGun = true end
+                                end
+                            end
+                        end
+
+                        if hasKnife then
+                            hl.FillColor = Color3.fromRGB(255, 50, 50) -- Red (Murderer)
+                        elseif hasGun then
+                            hl.FillColor = Color3.fromRGB(50, 100, 255) -- Blue (Sheriff)
+                        else
+                            hl.FillColor = Color3.fromRGB(50, 255, 50) -- Green (Innocent)
+                        end
+                    else
+                        -- Standard Neutral Chams Color
+                        hl.FillColor = Color3.fromRGB(0, 162, 255)
+                    end
+                end
+            end
+            task.wait(1)
+        end
+
+        -- Cleanup when turned off
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("NexusESPHighlight") then
+                p.Character.NexusESPHighlight.Enabled = false
+            end
+        end
+    end)
+end)
+
+
 -- ==================== RESPONSIVE TELEPORT HELPER ====================
 local function executeTeleport(targetPart, mode, speedVal, getState)
     local char = LocalPlayer.Character
@@ -326,7 +401,7 @@ local function executeTeleport(targetPart, mode, speedVal, getState)
 end
 
 
--- ==================== TAB 1: SURVIVOR TELEPORT ====================
+-- ==================== TAB 2: SURVIVOR TELEPORT ====================
 addSectionHeader(tabSurvivor, "Survivor Configuration")
 local survivorMode = "Fast"
 addConfigButton(tabSurvivor, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) survivorMode = v end)
@@ -363,7 +438,7 @@ addToggle(tabSurvivor, "Auto-Teleport to 'Survivor'", function(state)
 end)
 
 
--- ==================== TAB 2: COIN TELEPORT ====================
+-- ==================== TAB 3: COIN TELEPORT ====================
 addSectionHeader(tabCoins, "Coin Configuration")
 local coinMode = "Tween"
 addConfigButton(tabCoins, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) coinMode = v end)
@@ -396,7 +471,7 @@ addToggle(tabCoins, "Auto-Farm Coins", function(state)
 end)
 
 
--- ==================== TAB 3: ORB TELEPORT ====================
+-- ==================== TAB 4: ORB TELEPORT ====================
 addSectionHeader(tabOrbs, "Orb Configuration")
 local orbMode = "Tween"
 addConfigButton(tabOrbs, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) orbMode = v end)
@@ -429,7 +504,7 @@ addToggle(tabOrbs, "Auto-Farm Orbs", function(state)
 end)
 
 
--- ==================== TAB 4: DIAMOND TELEPORT ====================
+-- ==================== TAB 5: DIAMOND TELEPORT ====================
 addSectionHeader(tabDiamonds, "Diamond Configuration")
 local diamondMode = "Tween"
 addConfigButton(tabDiamonds, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) diamondMode = v end)
@@ -462,7 +537,7 @@ addToggle(tabDiamonds, "Auto-Farm Diamonds / Gems", function(state)
 end)
 
 
--- ==================== TAB 5: MISC & SETTINGS ====================
+-- ==================== TAB 6: MISC & SETTINGS ====================
 addSectionHeader(tabMisc, "Utility Options")
 addToggle(tabMisc, "Fullbright Lighting", function(state)
     Lighting.Brightness = state and 2 or 1
