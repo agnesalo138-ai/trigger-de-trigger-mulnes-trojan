@@ -1,0 +1,443 @@
+-- Nexus Vault: Collector & Survivor Hub with Advanced Sub-Menu Configurations
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Create GUI Container
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NexusVaultHub"
+ScreenGui.ResetOnSpawn = false
+
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = CoreGui
+else
+    pcall(function()
+        ScreenGui.Parent = CoreGui
+    end)
+end
+if ScreenGui.Parent ~= CoreGui then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 620, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -310, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(0, 162, 255)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = MainFrame
+
+-- Top Bar (Draggable Header)
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 10)
+TopBarCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -90, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🛡️ Nexus Vault | Collector & Survivor Hub"
+Title.TextColor3 = Color3.fromRGB(0, 162, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseBtn.Position = UDim2.new(1, -34, 0, 4)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(230, 70, 70)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = TopBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Hide / Minimize Button
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 32, 0, 32)
+HideBtn.Position = UDim2.new(1, -68, 0, 4)
+HideBtn.BackgroundTransparency = 1
+HideBtn.Text = "-"
+HideBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+HideBtn.TextSize = 16
+HideBtn.Font = Enum.Font.GothamBold
+HideBtn.Parent = TopBar
+
+local uiVisible = true
+HideBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    for _, child in ipairs(MainFrame:GetChildren()) do
+        if child ~= TopBar and child ~= UICorner and child ~= UIStroke then
+            child.Visible = uiVisible
+        end
+    end
+    MainFrame.Size = uiVisible and UDim2.new(0, 620, 0, 450) or UDim2.new(0, 620, 0, 40)
+    HideBtn.Text = uiVisible and "-" or "+"
+end)
+
+-- Draggable Logic
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Sidebar Navigation Tabs
+local Sidebar = Instance.new("ScrollingFrame")
+Sidebar.Size = UDim2.new(0, 160, 1, -50)
+Sidebar.Position = UDim2.new(0, 8, 0, 45)
+Sidebar.BackgroundTransparency = 1
+Sidebar.BorderSizePixel = 0
+Sidebar.CanvasSize = UDim2.new(0, 0, 0, 300)
+Sidebar.ScrollBarThickness = 2
+Sidebar.Parent = MainFrame
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(1, -178, 1, -50)
+ContentContainer.Position = UDim2.new(0, 172, 0, 45)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = MainFrame
+
+local tabs = {}
+local function createTabContent(name)
+    local scrollingFrame = Instance.new("ScrollingFrame")
+    scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollingFrame.BackgroundTransparency = 1
+    scrollingFrame.BorderSizePixel = 0
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
+    scrollingFrame.ScrollBarThickness = 3
+    scrollingFrame.Visible = false
+    scrollingFrame.Parent = ContentContainer
+    tabs[name] = scrollingFrame
+    return scrollingFrame
+end
+
+local tabY = 0
+local function createSidebarButton(name, targetTab)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 38)
+    btn.Position = UDim2.new(0, 0, 0, tabY)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    btn.BorderSizePixel = 0
+    btn.Text = "  " .. name
+    btn.TextColor3 = Color3.fromRGB(170, 170, 185)
+    btn.TextSize, btn.Font = 12, Enum.Font.GothamMedium
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = Sidebar
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        for _, t in pairs(tabs) do t.Visible = false end
+        for _, b in pairs(Sidebar:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+                b.TextColor3 = Color3.fromRGB(170, 170, 185)
+            end
+        end
+        targetTab.Visible = true
+        btn.BackgroundColor3 = Color3.fromRGB(0, 120, 210)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    tabY = tabY + 44
+    Sidebar.CanvasSize = UDim2.new(0, 0, 0, tabY)
+end
+
+-- Create Tabs (Menus with Sub-menus & Configurations)
+local tabSurvivor = createTabContent("Survivor Teleport")
+createSidebarButton("Survivor Teleport", tabSurvivor)
+tabSurvivor.Visible = true
+Sidebar:GetChildren()[1].BackgroundColor3 = Color3.fromRGB(0, 120, 210)
+Sidebar:GetChildren()[1].TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local tabCoins = createTabContent("Coin Teleport")
+createSidebarButton("Coin Teleport", tabCoins)
+
+local tabOrbs = createTabContent("Orb Teleport")
+createSidebarButton("Orb Teleport", tabOrbs)
+
+local tabDiamonds = createTabContent("Diamond Teleport")
+createSidebarButton("Diamond Teleport", tabDiamonds)
+
+local tabMisc = createTabContent("Misc & Settings")
+createSidebarButton("Misc & Settings", tabMisc)
+
+-- UI Element Helpers for Config Sub-menus
+local function addSectionHeader(tab, text)
+    local yPos = #tab:GetChildren() * 42
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 28)
+    label.Position = UDim2.new(0, 5, 0, yPos)
+    label.BackgroundTransparency = 1
+    label.Text = "  " .. text
+    label.TextColor3 = Color3.fromRGB(0, 162, 255)
+    label.TextSize, label.Font = 12, Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = tab
+    tab.CanvasSize = UDim2.new(0, 0, 0, yPos + 35)
+end
+
+local function addToggle(tab, name, callback)
+    local yPos = #tab:GetChildren() * 42
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 36)
+    btn.Position = UDim2.new(0, 5, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 34)
+    btn.BorderSizePixel = 0
+    btn.Text = "  " .. name .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(180, 180, 195)
+    btn.TextSize, btn.Font = 12, Enum.Font.Gotham
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = tab
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local status = false
+    btn.MouseButton1Click:Connect(function()
+        status = not status
+        btn.Text = "  " .. name .. ": " .. (status and "ON" or "OFF")
+        btn.BackgroundColor3 = status and Color3.fromRGB(0, 130, 220) or Color3.fromRGB(25, 25, 34)
+        btn.TextColor3 = status and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 195)
+        callback(status)
+    end)
+    tab.CanvasSize = UDim2.new(0, 0, 0, yPos + 46)
+end
+
+local function addConfigButton(tab, name, options, callback)
+    local yPos = #tab:GetChildren() * 42
+    local index = 1
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 36)
+    btn.Position = UDim2.new(0, 5, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+    btn.BorderSizePixel = 0
+    btn.Text = "  [Config] " .. name .. ": " .. options[index]
+    btn.TextColor3 = Color3.fromRGB(200, 200, 210)
+    btn.TextSize, btn.Font = 12, Enum.Font.Gotham
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = tab
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        index = index + 1
+        if index > #options then index = 1 end
+        btn.Text = "  [Config] " .. name .. ": " .. options[index]
+        callback(options[index])
+    end)
+    tab.CanvasSize = UDim2.new(0, 0, 0, yPos + 46)
+end
+
+
+-- ==================== TELEPORT HELPER FUNCTION ====================
+local function executeTeleport(targetPart, mode, speedVal)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local destCF = targetPart.CFrame + Vector3.new(0, 3, 0)
+
+    if mode == "Fast" then
+        hrp.CFrame = destCF
+    elseif mode == "Slow" then
+        local steps = 15
+        for i = 1, steps do
+            hrp.CFrame = hrp.CFrame:Lerp(destCF, i / steps)
+            task.wait(0.01)
+        end
+    elseif mode == "Tween" then
+        local dist = (hrp.Position - targetPart.Position).Magnitude
+        local duration = dist / (speedVal or 60)
+        local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = destCF})
+        tween:Play()
+        tween.Completed:Wait()
+    end
+end
+
+
+-- ==================== TAB 1: SURVIVOR TELEPORT ====================
+addSectionHeader(tabSurvivor, "Survivor Finder Configuration (Sub-Menu)")
+local survivorMode = "Fast"
+addConfigButton(tabSurvivor, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) survivorMode = v end)
+
+local survivorSpeed = 50
+addConfigButton(tabSurvivor, "Tween Speed", {30, 50, 80, 120}, function(v) survivorSpeed = tonumber(v) end)
+
+addSectionHeader(tabSurvivor, "Execution Control")
+local survivorActive = false
+addToggle(tabSurvivor, "Auto-Teleport to 'Survivor'", function(state)
+    survivorActive = state
+    task.spawn(function()
+        while survivorActive do
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj.Name == "Survivor" and obj:IsA("Model") then
+                    local h = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+                    if h then
+                        executeTeleport(h, survivorMode, survivorSpeed)
+                        task.wait(0.5)
+                        break
+                    end
+                end
+            end
+            task.wait(0.2)
+        end
+    end)
+end)
+
+
+-- ==================== TAB 2: COIN TELEPORT ====================
+addSectionHeader(tabCoins, "Coin Teleport Configuration (Sub-Menu)")
+local coinMode = "Tween"
+addConfigButton(tabCoins, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) coinMode = v end)
+
+local coinSpeed = 70
+addConfigButton(tabCoins, "Tween Speed", {40, 70, 100, 150}, function(v) coinSpeed = tonumber(v) end)
+
+addSectionHeader(tabCoins, "Execution Control")
+local coinActive = false
+addToggle(tabCoins, "Auto-Farm Coins", function(state)
+    coinActive = state
+    task.spawn(function()
+        while coinActive do
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if (obj.Name == "Coin" or obj.Name == "Coins" or obj.Name:lower():find("coin")) and obj:IsA("BasePart") then
+                    executeTeleport(obj, coinMode, coinSpeed)
+                    task.wait(0.1)
+                end
+            end
+            task.wait(0.5)
+        end
+    end)
+end)
+
+
+-- ==================== TAB 3: ORB TELEPORT ====================
+addSectionHeader(tabOrbs, "Orb Teleport Configuration (Sub-Menu)")
+local orbMode = "Tween"
+addConfigButton(tabOrbs, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) orbMode = v end)
+
+local orbSpeed = 80
+addConfigButton(tabOrbs, "Tween Speed", {50, 80, 120, 200}, function(v) orbSpeed = tonumber(v) end)
+
+addSectionHeader(tabOrbs, "Execution Control")
+local orbActive = false
+addToggle(tabOrbs, "Auto-Farm Orbs", function(state)
+    orbActive = state
+    task.spawn(function()
+        while orbActive do
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if (obj.Name == "Orb" or obj.Name == "Orbs" or obj.Name:lower():find("orb")) and obj:IsA("BasePart") then
+                    executeTeleport(obj, orbMode, orbSpeed)
+                    task.wait(0.1)
+                end
+            end
+            task.wait(0.5)
+        end
+    end)
+end)
+
+
+-- ==================== TAB 4: DIAMOND TELEPORT ====================
+addSectionHeader(tabDiamonds, "Diamond Teleport Configuration (Sub-Menu)")
+local diamondMode = "Tween"
+addConfigButton(tabDiamonds, "Movement Mode", {"Fast", "Slow", "Tween"}, function(v) diamondMode = v end)
+
+local diamondSpeed = 60
+addConfigButton(tabDiamonds, "Tween Speed", {30, 60, 90, 140}, function(v) diamondSpeed = tonumber(v) end)
+
+addSectionHeader(tabDiamonds, "Execution Control")
+local diamondActive = false
+addToggle(tabDiamonds, "Auto-Farm Diamonds / Gems", function(state)
+    diamondActive = state
+    task.spawn(function()
+        while diamondActive do
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if (obj.Name == "Diamond" or obj.Name == "Gem" or obj.Name:lower():find("diamond") or obj.Name:lower():find("gem")) and obj:IsA("BasePart") then
+                    executeTeleport(obj, diamondMode, diamondSpeed)
+                    task.wait(0.1)
+                end
+            end
+            task.wait(0.5)
+        end
+    end)
+end)
+
+
+-- ==================== TAB 5: MISC & SETTINGS ====================
+addSectionHeader(tabMisc, "Utility Options")
+addToggle(tabMisc, "Fullbright Lighting", function(state)
+    Lighting.Brightness = state and 2 or 1
+    Lighting.GlobalShadows = not state
+    Lighting.ClockTime = state and 14 or 12
+end)
+
+addToggle(tabMisc, "Anti-AFK Sovereign Guard", function(state)
+    if state then
+        local vu = game:GetService("VirtualUser")
+        LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+    end
+end)
+
+addToggle(tabMisc, "FPS Unblocker (999999 FPS)", function(state)
+    pcall(function() setfpscap(state and 999999 or 60) end)
+end)
