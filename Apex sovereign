@@ -1,0 +1,403 @@
+-- Apex Sovereign: Universal Admin & God Hub
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Create GUI Container
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ApexSovereignHub"
+ScreenGui.ResetOnSpawn = false
+
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = CoreGui
+else
+    pcall(function()
+        ScreenGui.Parent = CoreGui
+    end)
+end
+if ScreenGui.Parent ~= CoreGui then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 600, 0, 440)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -220)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(255, 215, 0)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = MainFrame
+
+-- Top Bar (Draggable Header)
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 10)
+TopBarCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -90, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "👑 Apex Sovereign | Universal God & Admin Hub"
+Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseBtn.Position = UDim2.new(1, -34, 0, 4)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(230, 70, 70)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = TopBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Hide / Minimize Button
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 32, 0, 32)
+HideBtn.Position = UDim2.new(1, -68, 0, 4)
+HideBtn.BackgroundTransparency = 1
+HideBtn.Text = "-"
+HideBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+HideBtn.TextSize = 16
+HideBtn.Font = Enum.Font.GothamBold
+HideBtn.Parent = TopBar
+
+local uiVisible = true
+HideBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    for _, child in ipairs(MainFrame:GetChildren()) do
+        if child ~= TopBar and child ~= UICorner and child ~= UIStroke then
+            child.Visible = uiVisible
+        end
+    end
+    MainFrame.Size = uiVisible and UDim2.new(0, 600, 0, 440) or UDim2.new(0, 600, 0, 40)
+    HideBtn.Text = uiVisible and "-" or "+"
+end)
+
+-- Draggable Logic
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Sidebar Navigation Tabs
+local Sidebar = Instance.new("ScrollingFrame")
+Sidebar.Size = UDim2.new(0, 150, 1, -50)
+Sidebar.Position = UDim2.new(0, 8, 0, 45)
+Sidebar.BackgroundTransparency = 1
+Sidebar.BorderSizePixel = 0
+Sidebar.CanvasSize = UDim2.new(0, 0, 0, 350)
+Sidebar.ScrollBarThickness = 2
+Sidebar.Parent = MainFrame
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(1, -168, 1, -50)
+ContentContainer.Position = UDim2.new(0, 164, 0, 45)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = MainFrame
+
+local tabs = {}
+local function createTabContent(name)
+    local scrollingFrame = Instance.new("ScrollingFrame")
+    scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollingFrame.BackgroundTransparency = 1
+    scrollingFrame.BorderSizePixel = 0
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 500)
+    scrollingFrame.ScrollBarThickness = 3
+    scrollingFrame.Visible = false
+    scrollingFrame.Parent = ContentContainer
+    tabs[name] = scrollingFrame
+    return scrollingFrame
+end
+
+local tabY = 0
+local function createSidebarButton(name, targetTab)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 36)
+    btn.Position = UDim2.new(0, 0, 0, tabY)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    btn.BorderSizePixel = 0
+    btn.Text = "  " .. name
+    btn.TextColor3 = Color3.fromRGB(170, 170, 185)
+    btn.TextSize, btn.Font = 12, Enum.Font.GothamMedium
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = Sidebar
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        for _, t in pairs(tabs) do t.Visible = false end
+        for _, b in pairs(Sidebar:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+                b.TextColor3 = Color3.fromRGB(170, 170, 185)
+            end
+        end
+        targetTab.Visible = true
+        btn.BackgroundColor3 = Color3.fromRGB(180, 140, 20)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    tabY = tabY + 42
+    Sidebar.CanvasSize = UDim2.new(0, 0, 0, tabY)
+end
+
+-- Tabs Setup
+local tab1 = createTabContent("God & Health")
+createSidebarButton("God & Health", tab1)
+tab1.Visible = true
+Sidebar:GetChildren()[1].BackgroundColor3 = Color3.fromRGB(180, 140, 20)
+Sidebar:GetChildren()[1].TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local tab2 = createTabContent("Money & Stats")
+createSidebarButton("Money & Stats", tab2)
+
+local tab3 = createTabContent("Movement & Fly")
+createSidebarButton("Movement & Fly", tab3)
+
+local tab4 = createTabContent("Visuals & ESP")
+createSidebarButton("Visuals & ESP", tab4)
+
+local tab5 = createTabContent("Admin & Misc")
+createSidebarButton("Admin & Misc", tab5)
+
+-- Helper Functions
+local function addToggle(tab, name, callback)
+    local yPos = #tab:GetChildren() * 42
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 36)
+    btn.Position = UDim2.new(0, 5, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 34)
+    btn.BorderSizePixel = 0
+    btn.Text = "  " .. name .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(180, 180, 195)
+    btn.TextSize, btn.Font = 12, Enum.Font.Gotham
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = tab
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local status = false
+    btn.MouseButton1Click:Connect(function()
+        status = not status
+        btn.Text = "  " .. name .. ": " .. (status and "ON" or "OFF")
+        btn.BackgroundColor3 = status and Color3.fromRGB(200, 150, 20) or Color3.fromRGB(25, 25, 34)
+        btn.TextColor3 = status and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 195)
+        callback(status)
+    end)
+    tab.CanvasSize = UDim2.new(0, 0, 0, yPos + 46)
+end
+
+-- ==================== TAB 1: GOD & HEALTH ====================
+local godConn
+addToggle(tab1, "Infinite Health / Godmode Loop", function(state)
+    if state then
+        godConn = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                hum.Health = hum.MaxHealth
+            end
+        end)
+    else
+        if godConn then godConn:Disconnect() end
+    end
+end)
+
+local noclipConn
+addToggle(tab1, "Quantum Noclip", function(state)
+    if state then
+        noclipConn = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    else
+        if noclipConn then noclipConn:Disconnect() end
+    end
+end)
+
+addToggle(tab1, "Infinite Air Jumps", function(state)
+    if state then
+        _G.InfJump = UserInputService.JumpRequest:Connect(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                char:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    else
+        if _G.InfJump then _G.InfJump:Disconnect() end
+    end
+end)
+
+
+-- ==================== TAB 2: MONEY & STATS (VISUAL SIMULATOR) ====================
+addToggle(tab2, "Client-Side Money/Cash Booster", function(state)
+    if state then
+        pcall(function()
+            local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+            if leaderstats then
+                for _, stat in ipairs(leaderstats:GetChildren()) do
+                    if stat:IsA("IntValue") or stat:IsA("NumberValue") then
+                        stat.Value = 999999999
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+addToggle(tab2, "Auto-Lock Stat Values (Visual)", function(state)
+    if state then
+        _G.StatLock = RunService.RenderStepped:Connect(function()
+            pcall(function()
+                local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+                if leaderstats then
+                    for _, stat in ipairs(leaderstats:GetChildren()) do
+                        if stat:IsA("IntValue") or stat:IsA("NumberValue") then
+                            stat.Value = 999999999
+                        end
+                    end
+                end
+            end)
+        end)
+    else
+        if _G.StatLock then _G.StatLock:Disconnect() end
+    end
+end)
+
+
+-- ==================== TAB 3: MOVEMENT & FLY ====================
+local speedConn
+addToggle(tab3, "Super WalkSpeed (50)", function(state)
+    if state then
+        speedConn = RunService.RenderStepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                char:FindFirstChildOfClass("Humanoid").WalkSpeed = 50
+            end
+        end)
+    else
+        if speedConn then speedConn:Disconnect() end
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then char:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
+    end
+end)
+
+local flyConn
+addToggle(tab3, "CFrame Flight (WASD + Camera)", function(state)
+    if state then
+        flyConn = RunService.RenderStepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local root = char.HumanoidRootPart
+                local cam = Camera.CFrame
+                local move = Vector3.new()
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = move + cam.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = move - cam.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = move - cam.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + cam.RightVector end
+                root.CFrame = root.CFrame + (move * 3)
+                root.Velocity = Vector3.new(0, 0, 0)
+            end
+        end)
+    else
+        if flyConn then flyConn:Disconnect() end
+    end
+end)
+
+
+-- ==================== TAB 4: VISUALS & ESP ====================
+addToggle(tab4, "Fullbright Lighting", function(state)
+    Lighting.Brightness = state and 2 or 1
+    Lighting.GlobalShadows = not state
+    Lighting.ClockTime = state and 14 or 12
+end)
+
+addToggle(tab4, "Player Highlight Chams", function(state)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local hl = p.Character:FindFirstChild("ApexHighlight") or Instance.new("Highlight")
+            hl.Name = "ApexHighlight"
+            hl.Parent = p.Character
+            hl.Enabled = state
+            hl.FillColor = Color3.fromRGB(255, 215, 0)
+        end
+    end
+end)
+
+
+-- ==================== TAB 5: ADMIN & MISC ====================
+addToggle(tab5, "FPS Unlocker (999999 FPS)", function(state)
+    pcall(function() setfpscap(state and 999999 or 60) end)
+end)
+
+addToggle(tab5, "Anti-AFK Protector", function(state)
+    if state then
+        local vu = game:GetService("VirtualUser")
+        LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+    end
+end)
